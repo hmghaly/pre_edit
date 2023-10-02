@@ -40,14 +40,27 @@ def process():
     return json.dumps(cur_dict)
 
 
+@app.route('/upload',methods = ['POST', 'GET'])
+def upload():
+    cur_dict={}
+    if request.method == 'POST':
+        posted_data=request.data.decode("utf-8")
+        posted_data_dict=json.loads(posted_data)
+        cur_dict["data"]=posted_data_dict
+        cur_dict["time"]=time.ctime()
+        fopen=open("query_log.txt","a")
+        fopen.write(json.dumps(cur_dict)+"\n")
+        fopen.close()
+
+    return json.dumps(cur_dict)
 
 @app.route('/assets/<path:path>')
-def send_report(path):
+def serve_file(path):
     return send_from_directory('assets', path)
 
  
 @app.route("/")
-def hello_world():
+def index():
     fopen=open("templates/index_template.html")
     content=fopen.read()
     fopen.close()
