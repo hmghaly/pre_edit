@@ -18,9 +18,9 @@
     	async function submit_data() {
     		console.log("submit data")
             upload_dict=await get_form_vals("upload_form")
-            console.log(upload_form)
+            console.log(upload_dict)
 
-            post_data("upload",upload_form,function(obj1){console.log(obj1)})
+            post_data("upload",upload_dict,function(obj1){console.log(obj1)})
 
     		$$("progress_div").innerHTML+="uploading file <br>"
     		await sleep(1000)
