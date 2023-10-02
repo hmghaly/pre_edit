@@ -1,15 +1,14 @@
 import json, time
-from flask import Flask, redirect, url_for, request,render_template
+from flask import Flask, redirect, url_for, request,render_template, send_file, send_from_directory
 
 
-#app = Flask(__name__)
+app = Flask(__name__)
 
-app = Flask(__name__, static_url_path='/assets')
+#app = Flask(__name__, static_url_path='/assets')
 
 # @app.route('/success/<name>')
 # def success(name):
 #     return 'welcome %s'% name
-
 
 
 # @app.route('/login',methods = ['POST', 'GET'])
@@ -48,7 +47,28 @@ def process():
     #     return redirect(url_for('success',name = user))
 
 
- 
+@app.route('/assets/<path:path>')
+def send_report(path):
+    return send_from_directory('assets', path)
+
+# @app.route('/<path:text>', methods=['GET', 'POST'])
+# def all_routes(text):
+#     if text.startswith('assets'):
+#         #do stuff
+#         output=text
+#         try:
+#             ext0=text.lower().split(".")[-1]
+#             if ext0 in ["js","css","json","txt"]:
+#                 fopen=open(text)
+#                 output=fopen.read()
+#                 fopen.close()
+#             elif len(ext0)<=4:
+
+#         except Exception as ex: output=str(ex)
+#         return output
+#     else:
+#         return redirect(url_for('404_error'))
+     
 @app.route("/")
 def hello_world():
     fopen=open("templates/index_template.html")
