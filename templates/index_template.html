@@ -17,7 +17,7 @@
     	}
     	async function submit_data() {
     		console.log("submit data")
-            await upload_dict=get_form_vals("upload_form")
+            upload_dict=await get_form_vals("upload_form")
             console.log(upload_form)
 
             post_data("upload",upload_form,function(obj1){console.log(obj1)})
