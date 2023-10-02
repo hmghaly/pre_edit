@@ -2,7 +2,9 @@ import json, time
 from flask import Flask, redirect, url_for, request,render_template
 
 
-app = Flask(__name__)
+#app = Flask(__name__)
+
+app = Flask(__name__, static_url_path='/assets')
 
 
 # @app.route('/success/<name>')
@@ -47,9 +49,6 @@ def process():
  
 @app.route("/")
 def hello_world():
-    # fopen=open("test123.txt","w")
-    # fopen.write("something")
-    # fopen.close()
     fopen=open("templates/index_template.html")
     content=fopen.read()
     fopen.close()
