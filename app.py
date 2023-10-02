@@ -54,6 +54,7 @@ def upload():
 
     return json.dumps(cur_dict)
 
+
 @app.route('/assets/<path:path>')
 def serve_file(path):
     return send_from_directory('assets', path)
