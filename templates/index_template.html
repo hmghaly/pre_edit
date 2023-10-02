@@ -17,7 +17,10 @@
     	}
     	async function submit_data() {
     		console.log("submit data")
-            post_data("upload",{},function(obj1){console.log(obj1)})
+            await upload_dict=get_form_vals("upload_form")
+            console.log(upload_form)
+
+            post_data("upload",upload_form,function(obj1){console.log(obj1)})
 
     		$$("progress_div").innerHTML+="uploading file <br>"
     		await sleep(1000)
@@ -49,9 +52,9 @@
 
 	<label for="model_select" class="form-label">Select Model:</label>
 	<select id="model_select" class="form-select mb-2 upload_form" aria-label="Default select example" name="selected_model">
-	  <option value="1">Neural Model 1</option>
-	  <option value="2">Non-Contexual Model (High Precision - Low Recall)</option>
-	  <option value="2">Noisy Model (High Recall - Low Precision)</option>
+	  <option value="neural_model1">Neural Model 1</option>
+	  <option value="non_contexual_model">Non-Contexual Model (High Precision - Low Recall)</option>
+	  <option value="noisy_model">Noisy Model (High Recall - Low Precision)</option>
 	</select>
 
 	<div class="d-grid gap-2 col-6 mx-auto">
