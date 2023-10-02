@@ -44,11 +44,14 @@ def process():
     #     return redirect(url_for('success',name = user))
 
 
-
+ 
 @app.route("/")
 def hello_world():
     # fopen=open("test123.txt","w")
     # fopen.write("something")
     # fopen.close()
-    return render_template("input.html")
+    fopen=open("templates/index_template.html")
+    content=fopen.read()
+    fopen.close()
+    return content #json.dumps(dict0) #render_template("input.html")
 #return render_template("input.html", title="Hello")
