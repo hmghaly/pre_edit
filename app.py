@@ -39,40 +39,17 @@ def process():
 
     return json.dumps(cur_dict)
 
-    # if request.method == 'POST':
-    #     user = request.form['nm']
-    #     return redirect(url_for('success',name = user))
-    # else:
-    #     user = request.args.get('nm')
-    #     return redirect(url_for('success',name = user))
 
 
 @app.route('/assets/<path:path>')
 def send_report(path):
     return send_from_directory('assets', path)
 
-# @app.route('/<path:text>', methods=['GET', 'POST'])
-# def all_routes(text):
-#     if text.startswith('assets'):
-#         #do stuff
-#         output=text
-#         try:
-#             ext0=text.lower().split(".")[-1]
-#             if ext0 in ["js","css","json","txt"]:
-#                 fopen=open(text)
-#                 output=fopen.read()
-#                 fopen.close()
-#             elif len(ext0)<=4:
-
-#         except Exception as ex: output=str(ex)
-#         return output
-#     else:
-#         return redirect(url_for('404_error'))
-     
+ 
 @app.route("/")
 def hello_world():
     fopen=open("templates/index_template.html")
     content=fopen.read()
     fopen.close()
     return content #json.dumps(dict0) #render_template("input.html")
-#return render_template("input.html", title="Hello")
+
