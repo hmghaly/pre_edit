@@ -11,6 +11,8 @@ app = Flask(__name__, static_url_path='/assets')
 # def success(name):
 #     return 'welcome %s'% name
 
+
+
 # @app.route('/login',methods = ['POST', 'GET'])
 # def login():
 #     if request.method == 'POST':
@@ -38,6 +40,7 @@ def process():
         fopen.close()
 
     return json.dumps(cur_dict)
+
     # if request.method == 'POST':
     #     user = request.form['nm']
     #     return redirect(url_for('success',name = user))
