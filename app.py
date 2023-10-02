@@ -6,7 +6,6 @@ from flask import Flask, redirect, url_for, request,render_template
 
 app = Flask(__name__, static_url_path='/assets')
 
-
 # @app.route('/success/<name>')
 # def success(name):
 #     return 'welcome %s'% name
