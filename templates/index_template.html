@@ -12,6 +12,7 @@
 
     <title>AI Pre-editing Assistant</title>
     <script type="text/javascript">
+        var data_dict={}
     	function sleep(duration){
     		return new Promise(resolve => setTimeout(resolve, duration));
     	}
@@ -20,10 +21,15 @@
             upload_dict=await get_form_vals("upload_form")
             console.log(upload_dict)
 
-            post_data("upload",upload_dict,function(obj1){console.log(obj1)})
 
     		$$("progress_div").innerHTML+="uploading file <br>"
-    		await sleep(1000)
+            await post_data("upload",upload_dict,function(obj1){
+                console.log(obj1)
+                data_dict=obj1
+            })
+            console.log(data_dict)
+
+    		//await sleep(1000)
     		//await new Promise(resolve => setTimeout(resolve, 1000));
     		$$("progress_div").innerHTML+="file uploaded successfully ✅ <br>"
     		$$("progress_div").innerHTML+="started processing  <br>"
