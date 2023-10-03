@@ -60,9 +60,9 @@ def upload():
         cur_dict["fpath"]=uploaded_fpath
         cur_dict["data"]=posted_data_dict
         cur_dict["time"]=time.ctime()
-        # fopen=open("query_log.txt","a")
-        # fopen.write(json.dumps(cur_dict)+"\n")
-        # fopen.close()
+        fopen=open("query_log.txt","a")
+        fopen.write(json.dumps(cur_dict)+"\n")
+        fopen.close()
 
     return json.dumps(cur_dict)
 
