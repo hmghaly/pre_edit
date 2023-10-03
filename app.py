@@ -46,17 +46,37 @@ no_context_first_token_dict=open_sqld(no_context_first_token_dict_fpath)
 @app.route('/process',methods = ['POST', 'GET'])
 def process():
     #cur_dict={"request_type":"generic"}
+
     cur_dict={}
+    
     #cur_dict=dict(request.form)
     if request.method == 'POST':
         posted_data=request.data.decode("utf-8")
         posted_data_dict=json.loads(posted_data)
+
+        #cur_docx_path="uploaded/2212742_Case_Study_Handbook_ALK_part_1.docx"
+        
+        cur_docx_path=posted_data_dict.get("fpath")
+        new_edit_pre_edit_list,all_repl_inst_list,analysis_dict=analyze_pre_edit_docx(cur_docx_path,loaded_model,refined_first_token_dict,pred_threshold=0.3)
+        new_edit_list=[(v[1],v[4],v[-1]) for v in new_edit_pre_edit_list]
+        cur_docx_fname=os.path.split(cur_docx_path)[-1]
+        cur_html_fname=cur_docx_fname.replace(".docx",".html")
+        if not cur_html_fname.endswith(".html"): cur_html_fname+=".html"
+        cur_html_fpath=os.path.join(processing_dir,cur_html_fname)
+        cur_template_fpath="templates/pre-editing_table_template_controls.html"
+        edit_list2html(new_edit_list,cur_html_fpath,template_fpath=cur_template_fpath)
+        cur_dict=copy.deepcopy(posted_data_dict)
+        cur_dict["cur_html_fpath"]=cur_html_fpath
+
+
         #posted_data=posted_data.decode("utf-8")
         #cur_dict={"request_type":"POST"}
         #request.data
 
-        cur_dict["data"]=posted_data_dict
+        #cur_dict["data"]=posted_data_dict
         cur_dict["time"]=time.ctime()
+        cur_dict["action"]="processed"
+        cur_dict["success"]=True
         fopen=open("query_log.txt","a")
         fopen.write(json.dumps(cur_dict)+"\n")
         fopen.close()
