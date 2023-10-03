@@ -21,7 +21,7 @@
             upload_dict=await get_form_vals("upload_form")
             console.log(upload_dict)
 
-
+            $$("progress_div").innerHTML=""
     		$$("progress_div").innerHTML+="uploading file <br>"
             upload_response_dict=await post_data_async("upload",upload_dict)
             console.log(upload_response_dict)
