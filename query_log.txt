@@ -8,3 +8,7 @@
 {"selected_model": "neural_model1", "fpath": "uploaded/2300097E_Editing.docx", "time": "Tue Oct  3 16:19:08 2023", "action": "upload", "success": true}
 {"selected_model": "neural_model1", "fpath": "uploaded/2300092E_Editing.docx", "time": "Tue Oct  3 16:22:24 2023", "action": "upload", "success": true}
 {"selected_model": "neural_model1", "fpath": "uploaded/2300092E_Editing.docx", "time": "Tue Oct  3 16:22:24 2023", "action": "processed", "success": true, "cur_html_fpath": "processing/2300092E_Editing.html"}
+{"selected_model": "neural_model1", "fpath": "uploaded/2300135E_Editing.docx", "time": "Tue Oct  3 16:57:32 2023", "action": "upload", "success": true}
+{"selected_model": "neural_model1", "fpath": "uploaded/2300135E_Editing.docx", "time": "Tue Oct  3 16:57:32 2023", "action": "processed", "success": true, "cur_html_fpath": "processing/2300135E_Editing.html"}
+{"selected_model": "neural_model1", "fpath": "uploaded/2306645E_2_AdvancedEditedText.docx", "time": "Tue Oct  3 16:57:50 2023", "action": "upload", "success": true}
+{"selected_model": "neural_model1", "fpath": "uploaded/2306645E_2_AdvancedEditedText.docx", "time": "Tue Oct  3 16:58:00 2023", "action": "processed", "success": true, "cur_html_fpath": "processing/2306645E_2_AdvancedEditedText.html"}
