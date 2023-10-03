@@ -30,7 +30,12 @@
     		//await new Promise(resolve => setTimeout(resolve, 1000));
     		$$("progress_div").innerHTML+="file uploaded successfully ✅ <br>"
     		$$("progress_div").innerHTML+="started processing  <br>"
-    		await sleep(1000)
+
+            processing_response_dict=await post_data_async("process",upload_response_dict)
+            console.log(processing_response_dict)
+
+
+    		//await sleep(1000)
     		//await new Promise(resolve => setTimeout(resolve, 1000));
     		$$("progress_div").innerHTML+="file processed successfully ✅ <br>"
     		$$("progress_div").innerHTML+="creating interface link <br>"
