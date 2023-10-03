@@ -57,6 +57,8 @@ def upload():
         file_name=re.sub("\s+","_",file_name)
         uploaded_fpath=os.path.join(upload_dir,file_name)
         write_base64(file_content,uploaded_fpath)
+        posted_data_dict.pop('uploaded_file', None)
+
         cur_dict["fpath"]=uploaded_fpath
         cur_dict["data"]=posted_data_dict
         cur_dict["time"]=time.ctime()
