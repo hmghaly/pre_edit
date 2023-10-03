@@ -39,11 +39,13 @@
     		//await new Promise(resolve => setTimeout(resolve, 1000));
     		$$("progress_div").innerHTML+="file processed successfully ✅ <br>"
     		$$("progress_div").innerHTML+="creating interface link <br>"
-    		await sleep(1000)
+    		//await sleep(1000)
     		$$("progress_div").innerHTML+="interface link created successfully ✅ <br>"
+            html_fpath=processing_response_dict["cur_html_fpath"]
+            link='<a href="_href_" target="new">Interface Link</a>'.replace("_href_","interface?link="+html_fpath)
     		
     		//await new Promise(resolve => setTimeout(resolve, 1000));
-    		$$("progress_div").innerHTML+="You will be redirected to interface page. If Not, go to <a href='interface?file_id=AAA'>Interface Link</a>"
+    		$$("progress_div").innerHTML+="You will be redirected to interface page. If Not, go to: "+link
 
 
     	}
