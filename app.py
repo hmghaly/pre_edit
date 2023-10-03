@@ -43,6 +43,15 @@ no_context_first_token_dict=open_sqld(no_context_first_token_dict_fpath)
 #         user = request.args.get('nm')
 #         return redirect(url_for('success',name = user))
 
+@app.route('/interface',methods = ['POST', 'GET'])
+def interface():
+    cur_dict={"request_type":"generic"}
+    cur_link = request.args.get('link')
+    cur_dict["link"]=cur_link
+    try: output=read_file(cur_link)
+    except: output=json.dumps(cur_dict) 
+    return output 
+
 @app.route('/process',methods = ['POST', 'GET'])
 def process():
     #cur_dict={"request_type":"generic"}
@@ -82,7 +91,6 @@ def process():
         fopen.close()
 
     return json.dumps(cur_dict)
-
 
 
 

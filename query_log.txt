@@ -6,3 +6,5 @@
 {"selected_model": "neural_model1", "fpath": "uploaded/2212742_Case_Study_Handbook_ALK_part_1.docx", "time": "Tue Oct  3 15:51:08 2023", "action": "upload", "success": true}
 {"selected_model": "neural_model1", "fpath": "uploaded/1708299_AAC10920176_reissue_CF.docx", "time": "Tue Oct  3 16:12:10 2023", "action": "upload", "success": true}
 {"selected_model": "neural_model1", "fpath": "uploaded/2300097E_Editing.docx", "time": "Tue Oct  3 16:19:08 2023", "action": "upload", "success": true}
+{"selected_model": "neural_model1", "fpath": "uploaded/2300092E_Editing.docx", "time": "Tue Oct  3 16:22:24 2023", "action": "upload", "success": true}
+{"selected_model": "neural_model1", "fpath": "uploaded/2300092E_Editing.docx", "time": "Tue Oct  3 16:22:24 2023", "action": "processed", "success": true, "cur_html_fpath": "processing/2300092E_Editing.html"}
