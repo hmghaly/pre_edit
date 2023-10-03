@@ -9,16 +9,24 @@ from code_utils.sqld_utils import *
 app = Flask(__name__)
 
 upload_dir="uploaded"
+processing_dir="processing"
+output_dir="output"
 if not os.path.exists(upload_dir): os.makedirs(upload_dir)
+if not os.path.exists(processing_dir): os.makedirs(processing_dir)
+if not os.path.exists(output_dir): os.makedirs(output_dir)
+
+wv_fpath0="data-models/editing_word2vec_1198062_20.model"
 
 nn_model_path="data-models/model-refined-full-20wv-1-408-1-128-1-0.001-50000.model"
-loaded_model=load_nn(nn_model_path,seq_nn_OLD,extract_ft_lb,epoch_i=5)
+loaded_model=load_nn(nn_model_path,seq_nn_OLD,extract_ft_lb,epoch_i=5,cur_wv_path=wv_fpath0)
 
 refined_first_token_dict_fpath="data-models/refined_first_token_dict.sqld"
 refined_first_token_dict=open_sqld(refined_first_token_dict_fpath)
 
 no_context_first_token_dict_fpath="data-models/no_context_first_token_dict.sqld"
 no_context_first_token_dict=open_sqld(no_context_first_token_dict_fpath)
+
+
 
 
 #app = Flask(__name__, static_url_path='/assets')
