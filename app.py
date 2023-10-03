@@ -85,6 +85,7 @@ def process():
 
 
 
+
 @app.route('/upload',methods = ['POST', 'GET'])
 def upload():
     cur_dict={}
