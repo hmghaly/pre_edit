@@ -27,8 +27,6 @@ no_context_first_token_dict_fpath="data-models/no_context_first_token_dict.sqld"
 no_context_first_token_dict=open_sqld(no_context_first_token_dict_fpath)
 
 
-
-
 #app = Flask(__name__, static_url_path='/assets')
 
 # @app.route('/success/<name>')
