@@ -1,0 +1,4 @@
+{"fpath": "uploaded/2300175E_Editing.docx", "data": {"selected_model": "neural_model1"}, "time": "Tue Oct  3 14:35:28 2023"}
+{"fpath": "uploaded/2307398__1_advance_SR.docx", "data": {"selected_model": "non_contexual_model"}, "time": "Tue Oct  3 14:37:21 2023", "action": "upload", "success": true}
+{"fpath": "uploaded/2300175E_Editing.docx", "data": {"selected_model": "noisy_model"}, "time": "Tue Oct  3 14:38:23 2023", "action": "upload", "success": true}
+{"selected_model": "non_contexual_model", "fpath": "uploaded/GA_decision_77_548_E_edited_HJ_(CORRECTED).docx", "time": "Tue Oct  3 14:40:13 2023", "action": "upload", "success": true}
