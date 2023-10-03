@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+  
+}  
+
+function accept_repl(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+    <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div>
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+
+
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead>
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body"><tr class="table-light"><td>A/CN.10/2023/L.1</td><td>A/CN.10/2023/L.1</td><td>A/CN.10/2023/L.1</td></tr><tr class="table-dark text-dark"><td>Disarmament Commission </td><td>Disarmament Commission</td><td>Disarmament Commission</td></tr><tr class="table-light"><td>Substantive session of 2023 </td><td>Substantive session of 2023</td><td>Substantive session of 2023</td></tr><tr class="table-dark text-dark"><td>New York, 3–21 April 2023 </td><td>New York, 3–21 April 2023</td><td>New York, 3–21 April 2023</td></tr><tr class="table-light"><td>Draft report</td><td>Draft report</td><td>Draft report</td></tr><tr class="table-dark text-dark"><td>	</td><td></td><td></td></tr><tr class="table-light"><td>Contents</td><td>Contents</td><td>Contents</td></tr><tr class="table-dark text-dark"><td>Chapter</td><td><span id="4QQ3" class="replacement human tentative"><span class="from_repl">Chapter</span> <span class="to_repl"></span></span></td><td>Chapter</td></tr><tr class="table-light"><td>Page</td><td>Page</td><td>Page</td></tr><tr class="table-dark text-dark"><td>	Introduction	</td><td>Introduction</td><td>Introduction</td></tr><tr class="table-light"><td>2</td><td>2</td><td>2</td></tr><tr class="table-dark text-dark"><td>	Organization and work of the substantive session of 2023	</td><td>Organization and work of the substantive session of 2023</td><td>Organization and work of the substantive session of 2023</td></tr><tr class="table-light"><td>4</td><td>4</td><td>4</td></tr><tr class="table-dark text-dark"><td>	Documentation	</td><td>Documentation</td><td>Documentation</td></tr><tr class="table-light"><td>6</td><td>6</td><td>6</td></tr><tr class="table-dark text-dark"><td>Documents submitted by the Secretary-General	</td><td>Documents submitted by the Secretary-General</td><td>Documents submitted by the Secretary-General</td></tr><tr class="table-light"><td>6</td><td>6</td><td>6</td></tr><tr class="table-dark text-dark"><td>Other documents, including documents submitted by Member States	</td><td>Other documents, including documents submitted by Member States</td><td>Other documents, including documents submitted by Member States</td></tr><tr class="table-light"><td>6</td><td>6</td><td>6</td></tr><tr class="table-dark text-dark"><td>	Conclusions and recommendations	</td><td>Conclusions and recommendations</td><td>Conclusions and recommendations</td></tr><tr class="table-light"><td>6</td><td>6</td><td>6</td></tr><tr class="table-dark text-dark"><td>Chapter I</td><td><span id="YSU3" class="replacement human tentative"><span class="from_repl">Chapter I</span> <span class="to_repl"></span></span></td><td>Chapter I</td></tr><tr class="table-light"><td>		Introduction</td><td><span id="VJLV" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">I.</span></span> Introduction</td><td>Introduction</td></tr><tr class="table-dark text-dark"><td>1.	At its seventy-seventh session, the General Assembly adopted resolution 77/90, entitled “Report of the Disarmament Commission”, which read as follows:</td><td>1. At its seventy-seventh session, the General Assembly adopted resolution 77/90, entitled “Report of the Disarmament Commission”, which <span id="BQ6I" class="replacement human tentative"><span class="from_repl">read</span> <span class="to_repl">reads</span></span> as follows:</td><td>1. At its seventy-seventh session, the General Assembly adopted resolution 77/90, entitled “Report of the Disarmament Commission”, which read as follows:</td></tr><tr class="table-light"><td>	</td><td></td><td></td></tr><tr class="table-dark text-dark"><td>	The General Assembly,</td><td>The General Assembly,</td><td>The General Assembly,</td></tr><tr class="table-light"><td>	Having considered the report of the Disarmament Commission,</td><td>Having considered the report of the Disarmament Commission,</td><td>Having considered the report of the Disarmament Commission,</td></tr><tr class="table-dark text-dark"><td>	Recalling its resolutions 47/54 A of 9 December 1992, 47/54 G of 8 April 1993, 48/77 A of 16 December 1993, 49/77 A of 15 December 1994, 50/72 D of 12 December 1995, 51/47 B of 10 December 1996, 52/40 B of 9 December 1997, 53/79 A of 4 December 1998, 54/56 A of 1 December 1999, 55/35 C of 20 November 2000, 56/26 A of 29 November 2001, 57/95 of 22 November 2002, 58/67 of 8 December 2003, 59/105 of 3 December 2004, 60/91 of 8 December 2005, 61/98 of 6 December 2006, 62/54 of 5 December 2007, 63/83 of 2 December 2008, 64/65 of 2 December 2009, 65/86 of 8 December 2010, 66/60 of 2 December 2011, 67/71 of 3 December 2012, 68/63 of 5 December 2013, 69/77 of 2 December 2014, 70/68 of 7 December 2015, 71/82 of 5 December 2016, 72/66 of 4 December 2017 and 73/82 of 5 December 2018, and its decisions 74/511 of 12 December 2019, 74/546 of 2 April 2020, 75/519 A of 7 December 2020, 75/519 B of 25 March 2021 and 76/518 of 6 December 2021,</td><td>Recalling its resolutions 47/54 A of 9 December 1992, 47/54 G of 8 April 1993, 48/77 A of 16 December 1993, 49/77 A of 15 December 1994, 50/72 D of 12 December 1995, 51/47 B of 10 December 1996, 52/40 B of 9 December 1997, 53/79 A of 4 December 1998, 54/56 A of 1 December 1999, 55/35 C of 20 November 2000, 56/26 A of 29 November 2001, 57/95 of 22 November 2002, 58/67 of 8 December 2003, 59/105 of 3 December 2004, 60/91 of 8 December 2005, 61/98 of 6 December 2006, 62/54 of 5 December 2007, 63/83 of 2 December 2008, 64/65 of 2 December 2009, 65/86 of 8 December 2010, 66/60 of 2 December 2011, 67/71 of 3 December 2012, 68/63 of 5 December 2013, 69/77 of 2 December 2014, 70/68 of 7 December 2015, 71/82 of 5 December 2016, 72/66 of 4 December 2017 and 73/82 of 5 December 2018, and its decisions 74/511 of 12 December 2019, 74/546 of 2 April 2020, 75/519 A of 7 December 2020, 75/519 B of 25 March 2021 and 76/518 of 6 December 2021,</td><td>Recalling its resolutions 47/54 A of 9 December 1992, 47/54 G of 8 April 1993, 48/77 A of 16 December 1993, 49/77 A of 15 December 1994, 50/72 D of 12 December 1995, 51/47 B of 10 December 1996, 52/40 B of 9 December 1997, 53/79 A of 4 December 1998, 54/56 A of 1 December 1999, 55/35 C of 20 November 2000, 56/26 A of 29 November 2001, 57/95 of 22 November 2002, 58/67 of 8 December 2003, 59/105 of 3 December 2004, 60/91 of 8 December 2005, 61/98 of 6 December 2006, 62/54 of 5 December 2007, 63/83 of 2 December 2008, 64/65 of 2 December 2009, 65/86 of 8 December 2010, 66/60 of 2 December 2011, 67/71 of 3 December 2012, 68/63 of 5 December 2013, 69/77 of 2 December 2014, 70/68 of 7 December 2015, 71/82 of 5 December 2016, 72/66 of 4 December 2017 and 73/82 of 5 December 2018, and its decisions 74/511 of 12 December 2019, 74/546 of 2 April 2020, 75/519 A of 7 December 2020, 75/519 B of 25 March 2021 and 76/518 of 6 December 2021,</td></tr><tr class="table-light"><td>	Considering the role that the Disarmament Commission has been called upon to play and the contribution that it should make in examining and submitting recommendations on various problems in the field of disarmament and in promoting the implementation of the relevant decisions adopted by the General Assembly at its tenth special session,</td><td>Considering the role that the Disarmament Commission has been called upon to play and the contribution that it should make in examining and submitting recommendations on various problems in the field of disarmament and in promoting the implementation of the relevant decisions adopted by the General Assembly at its tenth special session,</td><td>Considering the role that the Disarmament Commission has been called upon to play and the contribution that it should make in examining and submitting recommendations on various problems in the field of disarmament and in promoting the implementation of the relevant decisions adopted by the General Assembly at its tenth special session,</td></tr><tr class="table-dark text-dark"><td>	Recalling in particular General Assembly resolution 45/62 B of 4 December 1990, in which it noted with satisfaction the adoption by consensus of a set of “Ways and means to enhance the functioning of the Disarmament Commission”, Assembly decision 52/492 of 8 September 1998 concerning the efficient functioning of the Commission and Assembly resolution 61/98, which contains additional measures for improving the effectiveness of the methods of work of the Commission,</td><td>Recalling in particular General Assembly resolution 45/62 B of 4 December 1990, in which it noted with satisfaction the adoption by consensus of a set of “Ways and means to enhance the functioning of the Disarmament Commission”, Assembly decision 52/492 of 8 September 1998 concerning the efficient functioning of the Commission and Assembly resolution 61/98, which contains additional measures for improving the effectiveness of the methods of work of the Commission,</td><td>Recalling in particular General Assembly resolution 45/62 B of 4 December 1990, in which it noted with satisfaction the adoption by consensus of a set of “Ways and means to enhance the functioning of the Disarmament Commission”, Assembly decision 52/492 of 8 September 1998 concerning the efficient functioning of the Commission and Assembly resolution 61/98, which contains additional measures for improving the effectiveness of the methods of work of the Commission,</td></tr><tr class="table-light"><td>	Reaffirming the mandate of the Disarmament Commission as the specialized, deliberative subsidiary body of the General Assembly that allows for in-depth deliberations on specific disarmament issues, leading to the submission of concrete recommendations on those issues, and recalling that the Commission shall make every effort to ensure that, insofar as possible, decisions on substantive issues be adopted by consensus, as set forth in paragraph 118 of the Final Document of the Tenth Special Session of the General Assembly,</td><td>Reaffirming the mandate of the Disarmament Commission as the specialized, deliberative subsidiary body of the General Assembly that allows for in-depth deliberations on specific disarmament issues, leading to the submission of concrete recommendations on those issues, and recalling that the Commission shall make every effort to ensure that, insofar as possible, decisions on substantive issues be adopted by consensus, as set forth in paragraph 118 of the Final Document of the Tenth Special Session of the General Assembly,</td><td>Reaffirming the mandate of the Disarmament Commission as the specialized, deliberative subsidiary body of the General Assembly that allows for in-depth deliberations on specific disarmament issues, leading to the submission of concrete recommendations on those issues, and recalling that the Commission shall make every effort to ensure that, insofar as possible, decisions on substantive issues be adopted by consensus, as set forth in paragraph 118 of the Final Document of the Tenth Special Session of the General Assembly,</td></tr><tr class="table-dark text-dark"><td>	Emphasizing once again the important place of the Disarmament Commission within the United Nations multilateral disarmament machinery,</td><td>Emphasizing once again the important place of the Disarmament Commission within the United Nations multilateral disarmament machinery,</td><td>Emphasizing once again the important place of the Disarmament Commission within the United Nations multilateral disarmament machinery,</td></tr><tr class="table-light"><td>	1.	Takes note of the report of the Disarmament Commission;</td><td>1. Takes note of the report of the Disarmament Commission;</td><td>1. Takes note of the report of the Disarmament Commission;</td></tr><tr class="table-dark text-dark"><td>	2.	Reaffirms the importance of further enhancing the dialogue and cooperation among the First Committee, the Disarmament Commission and the Conference on Disarmament, notes that the Commission has not submitted recommendations to the last five sessions of the General Assembly, and therefore encourages the revitalization of the work of the Commission in its current triennial cycle;</td><td>2. Reaffirms the importance of further enhancing the dialogue and cooperation among the First Committee, the Disarmament Commission and the Conference on Disarmament, notes that the Commission has not submitted recommendations to the last five sessions of the General Assembly, and therefore encourages the revitalization of the work of the Commission in its current triennial cycle;</td><td>2. Reaffirms the importance of further enhancing the dialogue and cooperation among the First Committee, the Disarmament Commission and the Conference on Disarmament, notes that the Commission has not submitted recommendations to the last five sessions of the General Assembly, and therefore encourages the revitalization of the work of the Commission in its current triennial cycle;</td></tr><tr class="table-light"><td>	3.	Emphasizes the need for a focused and results-oriented discussion on the items on the agenda of the Disarmament Commission;</td><td>3. Emphasizes the need for a focused and results-oriented discussion on the items on the agenda of the Disarmament Commission;</td><td>3. Emphasizes the need for a focused and results-oriented discussion on the items on the agenda of the Disarmament Commission;</td></tr><tr class="table-dark text-dark"><td>	4.	Requests the Disarmament Commission to continue its work in accordance with its mandate, as set forth in paragraph 118 of the Final Document of the Tenth Special Session of the General Assembly, and with paragraph 3 of Assembly resolution 37/78 H of 9 December 1982, and to that end to make every effort to achieve specific recommendations on the items on its agenda, taking into account the adopted “Ways and means to enhance the functioning of the Disarmament Commission”;</td><td>4. Requests the Disarmament Commission to continue its work in accordance with its mandate, as set forth in paragraph 118 of the Final Document of the Tenth Special Session of the General Assembly, and with paragraph 3 of Assembly resolution 37/78 H of 9 December 1982, and to that end to make every effort to achieve specific recommendations on the items on its agenda, taking into account the adopted “Ways and means to enhance the functioning of the Disarmament Commission”;</td><td>4. Requests the Disarmament Commission to continue its work in accordance with its mandate, as set forth in paragraph 118 of the Final Document of the Tenth Special Session of the General Assembly, and with paragraph 3 of Assembly resolution 37/78 H of 9 December 1982, and to that end to make every effort to achieve specific recommendations on the items on its agenda, taking into account the adopted “Ways and means to enhance the functioning of the Disarmament Commission”;</td></tr><tr class="table-light"><td>	5.	Recalls the fact that, in accordance with General Assembly decision 52/492, at its 376th meeting, on 4 April 2022, the Disarmament Commission adopted the provisional agenda for its substantive session of 2022, and that the Commission decided that 2022 be considered a second year of the three-year cycle;</td><td>5. Recalls the fact that, in accordance with General Assembly decision 52/492, at its 376th meeting, on 4 April 2022, the Disarmament Commission adopted the provisional agenda for its substantive session of 2022, and that the Commission decided that 2022 be considered a second year of the three-year cycle;</td><td>5. Recalls the fact that, in accordance with General Assembly decision 52/492, at its 376th meeting, on 4 April 2022, the Disarmament Commission adopted the provisional agenda for its substantive session of 2022, and that the Commission decided that 2022 be considered a second year of the three-year cycle;</td></tr><tr class="table-dark text-dark"><td>	6.	Recommends that the Disarmament Commission continue consideration of the following items at its substantive session of 2023:</td><td>6. Recommends that the Disarmament Commission continue consideration of the following items at its substantive session of 2023:</td><td>6. Recommends that the Disarmament Commission continue consideration of the following items at its substantive session of 2023:</td></tr><tr class="table-light"><td>	(a)	Recommendations for achieving the objective of nuclear disarmament and non-proliferation of nuclear weapons;</td><td>(a) Recommendations for achieving the objective of nuclear disarmament and non-proliferation of nuclear weapons;</td><td>(a) Recommendations for achieving the objective of nuclear disarmament and non-proliferation of nuclear weapons;</td></tr><tr class="table-dark text-dark"><td>	(b)	Preparation of recommendations to promote the practical implementation of transparency and confidence-building measures in outer space activities with the goal of preventing an arms race in outer space, in accordance with the recommendations set out in the report of the Group of Governmental Experts on Transparency and Confidence-Building Measures in Outer Space Activities;</td><td>(b) Preparation of recommendations to promote the practical implementation of transparency and confidence-building measures in outer space activities with the goal of preventing an arms race in outer space, in accordance with the recommendations set out in the report of the Group of Governmental Experts on Transparency and Confidence-Building Measures in Outer Space Activities;</td><td>(b) Preparation of recommendations to promote the practical implementation of transparency and confidence-building measures in outer space activities with the goal of preventing an arms race in outer space, in accordance with the recommendations set out in the report of the Group of Governmental Experts on Transparency and Confidence-Building Measures in Outer Space Activities;</td></tr><tr class="table-light"><td>	7.	Notes that the Disarmament Commission encourages the Chairs of its working groups to continue, during the intersessional period, informal consultations on the agenda item allocated to each of the groups;</td><td>7. Notes that the Disarmament Commission encourages the Chairs of its working groups to continue, during the intersessional period, informal consultations on the agenda item allocated to each of the groups;</td><td>7. Notes that the Disarmament Commission encourages the Chairs of its working groups to continue, during the intersessional period, informal consultations on the agenda item allocated to each of the groups;</td></tr><tr class="table-dark text-dark"><td>	8.	Encourages the Disarmament Commission to invite, as appropriate, the United Nations Institute for Disarmament Research to prepare background papers on the items on its agenda and, if need be, other disarmament experts to present their views, as provided for in paragraph 3 (e) of resolution 61/98, upon the invitation of the Chair and with the prior approval of the Commission;</td><td>8. Encourages the Disarmament Commission to invite, as appropriate, the United Nations Institute for Disarmament Research to prepare background papers on the items on its agenda and, if need be, other disarmament experts to present their views, as provided for in paragraph 3 (e) of resolution 61/98, upon the invitation of the Chair and with the prior approval of the Commission;</td><td>8. Encourages the Disarmament Commission to invite, as appropriate, the United Nations Institute for Disarmament Research to prepare background papers on the items on its agenda and, if need be, other disarmament experts to present their views, as provided for in paragraph 3 (e) of resolution 61/98, upon the invitation of the Chair and with the prior approval of the Commission;</td></tr><tr class="table-light"><td>	9.	Requests the Disarmament Commission to hold a substantive session for a period not exceeding three weeks during 2023, namely, from 3 to 21 April, and an organizational session at the beginning of 2023 before the substantive session, to elect its Bureau and address other outstanding organizational matters, and to submit a substantive report to the General Assembly at its seventy-eighth session, and stresses that the report of the Commission should contain a summary by the Chair of the proceedings to reflect different views or positions if no agreement can be reached on the specific agenda item deliberated on, as provided for in paragraph 3.4 of the adopted “Ways and means to enhance the functioning of the Disarmament Commission”;</td><td>9. Requests the Disarmament Commission to hold a substantive session for a period not exceeding three weeks during 2023, namely, from 3 to 21 April, and an organizational session at the beginning of 2023 before the substantive session, to elect its Bureau and address other outstanding organizational matters, and to submit a substantive report to the General Assembly at its seventy-eighth session, and stresses that the report of the Commission should contain a summary by the Chair of the proceedings to reflect different views or positions if no agreement can be reached on the specific agenda item deliberated on, as provided for in paragraph 3.4 of the adopted “Ways and means to enhance the functioning of the Disarmament Commission”;</td><td>9. Requests the Disarmament Commission to hold a substantive session for a period not exceeding three weeks during 2023, namely, from 3 to 21 April, and an organizational session at the beginning of 2023 before the substantive session, to elect its Bureau and address other outstanding organizational matters, and to submit a substantive report to the General Assembly at its seventy-eighth session, and stresses that the report of the Commission should contain a summary by the Chair of the proceedings to reflect different views or positions if no agreement can be reached on the specific agenda item deliberated on, as provided for in paragraph 3.4 of the adopted “Ways and means to enhance the functioning of the Disarmament Commission”;</td></tr><tr class="table-dark text-dark"><td>	10.	Requests the Secretary-General to ensure full provision to the Disarmament Commission and its subsidiary bodies of interpretation and translation facilities in the official languages and to assign, as a matter of priority, all the resources and services necessary, including verbatim records, to that end, and also requests the Secretary-General to transmit to the Commission the annual report of the Conference on Disarmament on its 2022 session, together with all the official records of the seventy-seventh session of the General Assembly relating to disarmament matters, and to render all assistance that the Commission may require for implementing the present resolution;</td><td>10. Requests the Secretary-General to ensure full provision to the Disarmament Commission and its subsidiary bodies of interpretation and translation facilities in the official languages and to assign, as a matter of priority, all the resources and services necessary, including verbatim records, to that end, and also requests the Secretary-General to transmit to the Commission the annual report of the Conference on Disarmament on its 2022 session, together with all the official records of the seventy-seventh session of the General Assembly relating to disarmament matters, and to render all assistance that the Commission may require for implementing the present resolution;</td><td>10. Requests the Secretary-General to ensure full provision to the Disarmament Commission and its subsidiary bodies of interpretation and translation facilities in the official languages and to assign, as a matter of priority, all the resources and services necessary, including verbatim records, to that end, and also requests the Secretary-General to transmit to the Commission the annual report of the Conference on Disarmament on its 2022 session, together with all the official records of the seventy-seventh session of the General Assembly relating to disarmament matters, and to render all assistance that the Commission may require for implementing the present resolution;</td></tr><tr class="table-light"><td>	11.	Invites Member States to submit their views and proposals on the matter early enough to enable practical consultations among them prior to the beginning of the substantive session of 2023 of the Disarmament Commission, with a view to facilitating its constructive outcome, and in this regard encourages the Chair-designate to commence consultations and preparations for the substantive session of 2023 in a timely manner upon his or her nomination;</td><td>11. Invites Member States to submit their views and proposals on the matter early enough to enable practical consultations among them prior to the beginning of the substantive session of 2023 of the Disarmament Commission, with a view to facilitating its constructive outcome, and in this regard encourages the Chair-designate to commence consultations and preparations for the substantive session of 2023 in a timely manner upon his or her nomination;</td><td>11. Invites Member States to submit their views and proposals on the matter early enough to enable practical consultations among them prior to the beginning of the substantive session of 2023 of the Disarmament Commission, with a view to facilitating its constructive outcome, and in this regard encourages the Chair-designate to commence consultations and preparations for the substantive session of 2023 in a timely manner upon his or her nomination;</td></tr><tr class="table-dark text-dark"><td>12.	Decides to include in the provisional agenda of its seventy-eighth session, under the item entitled “Review of the implementation of the recommendations and decisions adopted by the General Assembly at its tenth special session”, the sub-item entitled “Report of the Disarmament Commission”.</td><td>12. Decides to include in the provisional agenda of its seventy-eighth session, under the item entitled “Review of the implementation of the recommendations and decisions adopted by the General Assembly at its tenth special session”, the sub-item entitled “Report of the Disarmament Commission”.</td><td>12. Decides to include in the provisional agenda of its seventy-eighth session, under the item entitled “Review of the implementation of the recommendations and decisions adopted by the General Assembly at its tenth special session”, the sub-item entitled “Report of the Disarmament Commission”.</td></tr><tr class="table-light"><td>Chapter II</td><td><span id="PZ7Z" class="replacement human tentative"><span class="from_repl">Chapter II</span> <span class="to_repl"></span></span></td><td>Chapter II</td></tr><tr class="table-dark text-dark"><td>		Organization and work of the substantive session of 2023</td><td><span id="WNPX" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">II.</span></span> Organization and work of the substantive session of 2023</td><td>Organization and work of the substantive session of 2023</td></tr><tr class="table-light"><td>2.	The Disarmament Commission held its organizational session for 2023 at United Nations Headquarters at its 383rd meeting, on 3 April 2023. At that meeting, the Commission considered questions relating to the organization of work and substantive agenda items for its substantive session of 2023 in accordance with the “Ways and means to enhance the functioning of the Disarmament Commission” adopted by the General Assembly (resolution 44/119 C, annex) and in the light of Assembly resolution 77/90. The Commission also took up the question of the election of its officers. It elected the Permanent Representative of Kazakhstan to the United Nations, Akan Rakhmetullin, as its Chair for its session.</td><td>2. The Disarmament Commission held its organizational session for 2023 at United Nations Headquarters at its 383rd meeting, on 3 April 2023 <span id="M2A1" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">(see A/CN.10/PV.383)</span></span> . At that meeting, the Commission considered questions relating to the organization of work and substantive agenda items for its substantive session of 2023 in accordance with the “Ways and means to enhance the functioning of the Disarmament Commission” adopted by the General Assembly (resolution 44/119 C, annex) and in the light of Assembly resolution 77/90. The Commission also took up the question of the election of its officers. It elected the Permanent Representative of Kazakhstan to the United Nations, Akan Rakhmetullin, as its Chair for its session.</td><td>2. The Disarmament Commission held its organizational session for 2023 at United Nations Headquarters at its 383rd meeting, on 3 April 2023. At that meeting, the Commission considered questions relating to the organization of work and substantive agenda items for its substantive session of 2023 in accordance with the “Ways and means to enhance the functioning of the Disarmament Commission” adopted by the General Assembly (resolution 44/119 C, annex) and in the light of Assembly resolution 77/90. The Commission also took up the question of the election of its officers. It elected the Permanent Representative of Kazakhstan to the United Nations, Akan Rakhmetullin, as its Chair for its session.</td></tr><tr class="table-dark text-dark"><td>3.	At the same meeting, the Commission adopted the provisional agenda for its organizational session (A/CN.10/L.89). </td><td>3. At the same meeting, the Commission adopted the provisional agenda for its organizational session (A/CN.10/L.89).</td><td>3. At the same meeting, the Commission adopted the provisional agenda for its organizational session (A/CN.10/L.89).</td></tr><tr class="table-light"><td>5.	Also at the same meeting, the Commission adopted the provisional agenda for its substantive session of 2023 ( HYPERLINK "https://undocs.org/en/A/CN.10/L.88/Rev.1" A/CN.10/L.90). The agenda reads as follows:</td><td><span id="0LAM" class="replacement human tentative"><span class="from_repl">5</span> <span class="to_repl">4</span></span> . Also at the same meeting, the Commission adopted the provisional agenda for its substantive session of 2023 <span id="V25H" class="replacement human tentative"><span class="from_repl">( HYPERLINK "https://undocs.org/en/A/CN.10/L.88/Rev.1</span> <span class="to_repl">(</span></span> A/CN.10/L.90). The agenda reads as follows:</td><td>5. Also at the same meeting, the Commission adopted the provisional agenda for its substantive session of 2023 ( HYPERLINK "https://undocs.org/en/A/CN.10/L.88/Rev.1 A/CN.10/L.90). The agenda reads as follows:</td></tr><tr class="table-dark text-dark"><td>		1.	Opening of the session.</td><td>1. Opening of the session.</td><td>1. Opening of the session.</td></tr><tr class="table-light"><td>		2.	Adoption of the agenda.</td><td>2. Adoption of the agenda.</td><td>2. Adoption of the agenda.</td></tr><tr class="table-dark text-dark"><td>		3.	Organization of work.</td><td>3. Organization of work.</td><td>3. Organization of work.</td></tr><tr class="table-light"><td>		4.	Recommendations for achieving the objective of nuclear disarmament and non-proliferation of nuclear weapons.</td><td>4. Recommendations for achieving the objective of nuclear disarmament and non-proliferation of nuclear weapons.</td><td>4. Recommendations for achieving the objective of nuclear disarmament and non-proliferation of nuclear weapons.</td></tr><tr class="table-dark text-dark"><td>		5.	Preparation of recommendations to promote the practical implementation of transparency and confidence-building measures in outer space activities with the goal of preventing an arms race in outer space, in accordance with the recommendations set out in the report of the Group of Governmental Experts on Transparency and Confidence-building Measures in Outer Space Activities.</td><td>5. Preparation of recommendations to promote the practical implementation of transparency and confidence-building measures in outer space activities with the goal of preventing an arms race in outer space, in accordance with the recommendations set out in the report of the Group of Governmental Experts on Transparency and Confidence- <span id="CE9X" class="replacement human tentative"><span class="from_repl">building</span> <span class="to_repl">Building</span></span> Measures in Outer Space Activities.</td><td>5. Preparation of recommendations to promote the practical implementation of transparency and confidence-building measures in outer space activities with the goal of preventing an arms race in outer space, in accordance with the recommendations set out in the report of the Group of Governmental Experts on Transparency and Confidence-building Measures in Outer Space Activities.</td></tr><tr class="table-light"><td>		6.	Report of the Disarmament Commission to the General Assembly at its seventy-eighth session.</td><td>6. Report of the Disarmament Commission to the General Assembly at its seventy-eighth session.</td><td>6. Report of the Disarmament Commission to the General Assembly at its seventy-eighth session.</td></tr><tr class="table-dark text-dark"><td>		7.	Other business.</td><td>7. Other business.</td><td>7. Other business.</td></tr><tr class="table-light"><td>8.	Also at the same meeting, the Commission took note of its schedule of meetings for the session (A/CN.10/2023/CRP.1) and decided to conclude its substantive session of 2023 on 20 April.</td><td><span id="EY8V" class="replacement human tentative"><span class="from_repl">8</span> <span class="to_repl">5</span></span> . Also at <span id="I8ZG" class="replacement human tentative"><span class="from_repl">the same</span> <span class="to_repl">its 383rd</span></span> meeting, the Commission took note of its schedule of meetings for the session (A/CN.10/2023/CRP.1) and decided to conclude its substantive session of 2023 on 20 April.</td><td>8. Also at the same meeting, the Commission took note of its schedule of meetings for the session (A/CN.10/2023/CRP.1) and decided to conclude its substantive session of 2023 on 20 April.</td></tr><tr class="table-dark text-dark"><td>9.	The Commission held its substantive session of 2023 at United Nations Headquarters from 3 to 20 April. In the course of its session, the Commission held five plenary meetings. The Disarmament and Peace Affairs Branch, Department for General Assembly and Conference Management, served as the secretariat of the Commission, and the Office for Disarmament Affairs represented the substantive secretariat.</td><td><span id="1SUN" class="replacement human tentative"><span class="from_repl">9</span> <span class="to_repl">6</span></span> . The Commission held its substantive session of 2023 at United Nations Headquarters from 3 to 20 April. In the course of its session, the Commission held five plenary meetings <span id="KPSQ" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">(see A/CN.10/PV.384–387 and A/CN.10/PV.389)</span></span> . The Disarmament and Peace Affairs Branch, Department for General Assembly and Conference Management, served as the secretariat of the Commission, and the Office for Disarmament Affairs represented the substantive secretariat.</td><td>9. The Commission held its substantive session of 2023 at United Nations Headquarters from 3 to 20 April. In the course of its session, the Commission held five plenary meetings. The Disarmament and Peace Affairs Branch, Department for General Assembly and Conference Management, served as the secretariat of the Commission, and the Office for Disarmament Affairs represented the substantive secretariat.</td></tr><tr class="table-light"><td>10.	During the session, the Bureau of the commission was constituted as follows:</td><td><span id="5CH7" class="replacement human tentative"><span class="from_repl">10</span> <span class="to_repl">7</span></span> . During the session, the Bureau of the <span id="VWWI" class="replacement human tentative"><span class="from_repl">commission</span> <span class="to_repl">Commission</span></span> was constituted as follows:</td><td>10. During the session, the Bureau of the commission was constituted as follows:</td></tr><tr class="table-dark text-dark"><td>	Chair:</td><td>Chair:</td><td>Chair:</td></tr><tr class="table-light"><td>		Akan Rakhmetullin (Kazakhstan)</td><td>Akan Rakhmetullin (Kazakhstan)</td><td>Akan Rakhmetullin (Kazakhstan)</td></tr><tr class="table-dark text-dark"><td>	Vice-Chairs:</td><td>Vice-Chairs:</td><td>Vice-Chairs:</td></tr><tr class="table-light"><td>			Representatives of Argentina, Australia, Burundi, Namibia, Russian Federation, Thailand and Ukraine</td><td>Representatives of Argentina, Australia, Burundi, Namibia, <span id="OHF9" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">the</span></span> Russian Federation, Thailand and Ukraine</td><td>Representatives of Argentina, Australia, Burundi, Namibia, Russian Federation, Thailand and Ukraine</td></tr><tr class="table-dark text-dark"><td>7.	At its 384th meeting, on 3 April 2023, the Commission elected Kurt Davis (Jamaica) as Chair of Working Group I, on agenda item 4, and Szilvia Balázs (Hungary) as Chair of Working Group II, on agenda item 5. </td><td><span id="05AZ" class="replacement human tentative"><span class="from_repl">7</span> <span class="to_repl">8</span></span> . At its 384th meeting, on 3 April 2023, the Commission elected Kurt Davis (Jamaica) as Chair of Working Group I, on agenda item 4, and Szilvia Balázs (Hungary) as Chair of Working Group II, on agenda item 5.</td><td>7. At its 384th meeting, on 3 April 2023, the Commission elected Kurt Davis (Jamaica) as Chair of Working Group I, on agenda item 4, and Szilvia Balázs (Hungary) as Chair of Working Group II, on agenda item 5.</td></tr><tr class="table-light"><td>11.	At its 384th to 387th meetings, on 3 and 4 April, the Commission held a general exchange of views on all agenda items. Representatives of the following countries made statements during the general exchange of views: Algeria, Argentina, Australia, Bangladesh, Belarus, Bolivarian Republic of Venezuela, Brazil, Cambodia, Chile, China, Colombia, Costa Rica, Côte d’Ivoire, Cuba, Djibouti, Ecuador, Egypt, El Salvador, Ethiopia, France, Germany, Ghana, Guyana, Honduras, India, Indonesia (first on behalf of the Non-Aligned Movement and subsequently in its national capacity), Iraq, Ireland, Islamic Republic of Iran, Israel, Japan, Jordan, Kazakhstan, Kenya, Kiribati, Kuwait, Lebanon (first on behalf of the Group of Arab states and subsequently in its national capacity), Libya, Lithuania (on behalf of: Baltic States), Malaysia, Mexico, Morocco, Myanmar, Namibia, Nepal, Nicaragua, Nigeria, Pakistan, Paraguay, Peru, Philippines (first on behalf of the Association of Southeast Asian Nations and subsequently in its national capacity), Plurinational State of Bolivia, Poland, Portugal, Republic of Korea, Russian Federation, Singapore, South Africa, Sri Lanka, Switzerland, Syrian Arab Republic, Thailand, Timor-Leste, Türkiye, Ukraine, United Kingdom of Great Britain and Northern Ireland, United Republic of Tanzania, United States of America, Viet Nam, Democratic People’s Republic of Korea, and Uruguay.. Statements were also made by the European Union, in its capacity as observer, the Holy See, the League of Arab States and the State of Palestine. </td><td><span id="LRYB" class="replacement human tentative"><span class="from_repl">11</span> <span class="to_repl">9</span></span> . At its 384th to 387th meetings, on 3 and 4 April, the Commission held a general exchange of views on all agenda items. Representatives of the following countries made statements during the general exchange of views: Algeria, Argentina, Australia, Bangladesh, Belarus, <span id="NT5S" class="replacement human tentative"><span class="from_repl">Bolivarian Republic of Venezuela</span> <span class="to_repl">Bolivia (Plurinational State of)</span></span> , Brazil, Cambodia, Chile, China, Colombia, Costa Rica, Côte d’Ivoire, Cuba, <span id="LVVK" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Democratic People's Republic of Korea,</span></span> Djibouti, Ecuador, Egypt, El Salvador, Ethiopia, France, Germany, Ghana, Guyana, Honduras, India, Indonesia (first on behalf of the <span id="TJAL" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Movement of</span></span> Non-Aligned <span id="DRS5" class="replacement human tentative"><span class="from_repl">Movement</span> <span class="to_repl">Countries</span></span> and subsequently in its national capacity), <span id="009J" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Iran (Islamic Republic of),</span></span> Iraq, Ireland, <span id="NIDS" class="replacement human tentative"><span class="from_repl">Islamic Republic of Iran,</span> <span class="to_repl"></span></span> Israel, Japan, Jordan, Kazakhstan, Kenya, Kiribati, Kuwait, Lebanon (first on behalf of the Group of Arab <span id="SE79" class="replacement human tentative"><span class="from_repl">states</span> <span class="to_repl">States</span></span> and subsequently in its national capacity), Libya, Lithuania (on behalf of <span id="CAC0" class="replacement human tentative"><span class="from_repl">:</span> <span class="to_repl">the</span></span> Baltic States), Malaysia, Mexico, Morocco, Myanmar, Namibia, Nepal, Nicaragua, Nigeria, Pakistan, Paraguay, Peru, Philippines (first on behalf of the Association of Southeast Asian Nations and subsequently in its national capacity), <span id="4CAT" class="replacement human tentative"><span class="from_repl">Plurinational State of Bolivia,</span> <span class="to_repl"></span></span> Poland, Portugal, Republic of Korea, Russian Federation, Singapore, South Africa, Sri Lanka, Switzerland, Syrian Arab Republic, Thailand, Timor-Leste, Türkiye, Ukraine, United Kingdom of Great Britain and Northern Ireland, United Republic of Tanzania, United States of America, <span id="LAAH" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Uruguay, Venezuela (Bolivarian Republic of) and</span></span> Viet Nam <span id="HKTJ" class="replacement human tentative"><span class="from_repl">, Democratic People's Republic of Korea, and Uruguay.</span> <span class="to_repl"></span></span> . Statements were also made by the <span id="IH5I" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">State of Palestine, Arab States (League of), the</span></span> European Union, in its capacity as observer, <span id="TQLO" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">and</span></span> the Holy See <span id="AGX1" class="replacement human tentative"><span class="from_repl">, the League of Arab States and the State of Palestine</span> <span class="to_repl"></span></span> .</td><td>11. At its 384th to 387th meetings, on 3 and 4 April, the Commission held a general exchange of views on all agenda items. Representatives of the following countries made statements during the general exchange of views: Algeria, Argentina, Australia, Bangladesh, Belarus, Bolivarian Republic of Venezuela, Brazil, Cambodia, Chile, China, Colombia, Costa Rica, Côte d’Ivoire, Cuba, Djibouti, Ecuador, Egypt, El Salvador, Ethiopia, France, Germany, Ghana, Guyana, Honduras, India, Indonesia (first on behalf of the Non-Aligned Movement and subsequently in its national capacity), Iraq, Ireland, Islamic Republic of Iran, Israel, Japan, Jordan, Kazakhstan, Kenya, Kiribati, Kuwait, Lebanon (first on behalf of the Group of Arab states and subsequently in its national capacity), Libya, Lithuania (on behalf of: Baltic States), Malaysia, Mexico, Morocco, Myanmar, Namibia, Nepal, Nicaragua, Nigeria, Pakistan, Paraguay, Peru, Philippines (first on behalf of the Association of Southeast Asian Nations and subsequently in its national capacity), Plurinational State of Bolivia, Poland, Portugal, Republic of Korea, Russian Federation, Singapore, South Africa, Sri Lanka, Switzerland, Syrian Arab Republic, Thailand, Timor-Leste, Türkiye, Ukraine, United Kingdom of Great Britain and Northern Ireland, United Republic of Tanzania, United States of America, Viet Nam, Democratic People's Republic of Korea, and Uruguay.. Statements were also made by the European Union, in its capacity as observer, the Holy See, the League of Arab States and the State of Palestine.</td></tr><tr class="table-dark text-dark"><td>12.	At its 384th meeting, the Commission heard a statement by the High Representative for Disarmament Affairs. </td><td><span id="HG6D" class="replacement human tentative"><span class="from_repl">12</span> <span class="to_repl">10</span></span> . At its 384th meeting, the Commission heard a statement by the High Representative for Disarmament Affairs.</td><td>12. At its 384th meeting, the Commission heard a statement by the High Representative for Disarmament Affairs.</td></tr><tr class="table-light"><td>13.	The Commission entrusted Working Group I with the mandate of dealing with agenda item 4. Working Group I held 10 meetings, from 5 to 20 April.</td><td><span id="25F3" class="replacement human tentative"><span class="from_repl">13</span> <span class="to_repl">11</span></span> . The Commission entrusted Working Group I with the mandate of dealing with agenda item 4. Working Group I held 10 meetings, from 5 to 20 April.</td><td>13. The Commission entrusted Working Group I with the mandate of dealing with agenda item 4. Working Group I held 10 meetings, from 5 to 20 April.</td></tr><tr class="table-dark text-dark"><td>14.	The Commission entrusted Working Group II with the mandate of dealing with agenda item 5. Working Group II held 8 meetings, from 4 to 19 April.</td><td><span id="FBKM" class="replacement human tentative"><span class="from_repl">14</span> <span class="to_repl">12</span></span> . The Commission entrusted Working Group II with the mandate of dealing with agenda item 5. Working Group II held <span id="VP2X" class="replacement human tentative"><span class="from_repl">8</span> <span class="to_repl">eight</span></span> meetings, from 4 to 19 April.</td><td>14. The Commission entrusted Working Group II with the mandate of dealing with agenda item 5. Working Group II held 8 meetings, from 4 to 19 April.</td></tr><tr class="table-light"><td>Chapter III</td><td><span id="EH0E" class="replacement human tentative"><span class="from_repl">Chapter III</span> <span class="to_repl"></span></span></td><td>Chapter III</td></tr><tr class="table-dark text-dark"><td>		Documentation </td><td><span id="83HK" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">III.</span></span> Documentation</td><td>Documentation</td></tr><tr class="table-light"><td>	A.	Documents submitted by the Secretary-General </td><td>A. Documents submitted by the Secretary-General</td><td>A. Documents submitted by the Secretary-General</td></tr><tr class="table-dark text-dark"><td>15.	The Commission had before it the note by the Secretary-General transmitting the list of documents submitted by the Secretary-General to the Commission for its substantive session of 2023 ( HYPERLINK "https://undocs.org/en/A/CN.10/213" A/CN.10/214). </td><td><span id="JPIB" class="replacement human tentative"><span class="from_repl">15</span> <span class="to_repl">13</span></span> . The Commission had before it the note by the Secretary-General transmitting the list of documents submitted by the Secretary-General to the Commission for its substantive session of 2023 <span id="JHMQ" class="replacement human tentative"><span class="from_repl">( HYPERLINK "https://undocs.org/en/A/CN.10/213</span> <span class="to_repl">(</span></span> A/CN.10/214).</td><td>15. The Commission had before it the note by the Secretary-General transmitting the list of documents submitted by the Secretary-General to the Commission for its substantive session of 2023 ( HYPERLINK "https://undocs.org/en/A/CN.10/213 A/CN.10/214).</td></tr><tr class="table-light"><td>	B.	Other documents, including documents submitted by Member States</td><td>B. Other documents, including documents submitted by Member States</td><td>B. Other documents, including documents submitted by Member States</td></tr><tr class="table-dark text-dark"><td>16.	In the course of the Commission’s work, the documents listed below, dealing with substantive questions, were submitted and considered:</td><td><span id="5XW5" class="replacement human tentative"><span class="from_repl">16</span> <span class="to_repl">14</span></span> . In the course of the Commission's work, the documents listed below, dealing with substantive questions, were submitted and considered:</td><td>16. In the course of the Commission's work, the documents listed below, dealing with substantive questions, were submitted and considered:</td></tr><tr class="table-light"><td>	(a)	Working papers submitted by the Non-Aligned Movement (A/CN.10/2023/WG.I/WP.1) and (A/CN.10/2023/WG.II/WP.1)</td><td>(a) Working papers submitted by the Non-Aligned Movement (A/CN.10/2023/WG.I/WP.1) and (A/CN.10/2023/WG.II/WP.1 <span id="NPI3" class="replacement human tentative"><span class="from_repl">)</span> <span class="to_repl">);</span></span></td><td>(a) Working papers submitted by the Non-Aligned Movement (A/CN.10/2023/WG.I/WP.1) and (A/CN.10/2023/WG.II/WP.1)</td></tr><tr class="table-dark text-dark"><td>	(b)	…</td><td>(b) …</td><td>(b) …</td></tr><tr class="table-light"><td>Chapter IV</td><td><span id="56VE" class="replacement human tentative"><span class="from_repl">Chapter IV</span> <span class="to_repl"></span></span></td><td>Chapter IV</td></tr><tr class="table-dark text-dark"><td>		Conclusions and recommendations </td><td><span id="C25T" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">IV.</span></span> Conclusions and recommendations</td><td>Conclusions and recommendations</td></tr><tr class="table-light"><td>17.	At its 388th meeting, on 20 April, the Commission adopted ad referendum the reports of the Commission and its subsidiary bodies. The Commission agreed to submit the texts of the reports, which are reproduced below, to the General Assembly.</td><td><span id="771N" class="replacement human tentative"><span class="from_repl">17</span> <span class="to_repl">15</span></span> . At its 388th meeting, on 20 April, the Commission adopted <span id="QMOQ" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> ad referendum <span id="AEGU" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> the reports of the Commission and its subsidiary bodies. The Commission agreed to submit the texts of the reports, which are reproduced below, to the General Assembly.</td><td>17. At its 388th meeting, on 20 April, the Commission adopted ad referendum the reports of the Commission and its subsidiary bodies. The Commission agreed to submit the texts of the reports, which are reproduced below, to the General Assembly.</td></tr><tr class="table-dark text-dark"><td>18.	At its 389th meeting, on 20 April, the Commission adopted, by consensus, the reports of the Commission and its subsidiary bodies, as orally revised, to be submitted to the General Assembly at its seventy-eighth session. The Commission expressed its appreciation to the Chair, the Bureau, the Chairs of the Working Groups and the Secretariat.</td><td><span id="5ZFQ" class="replacement human tentative"><span class="from_repl">18</span> <span class="to_repl">16</span></span> . At its 389th meeting, on 20 April, the Commission adopted, by consensus, the reports of the Commission and its subsidiary bodies, as orally revised, to be submitted to the General Assembly at its seventy-eighth session. The Commission expressed its appreciation to the Chair, the Bureau, the Chairs of the Working Groups and the Secretariat.</td><td>18. At its 389th meeting, on 20 April, the Commission adopted, by consensus, the reports of the Commission and its subsidiary bodies, as orally revised, to be submitted to the General Assembly at its seventy-eighth session. The Commission expressed its appreciation to the Chair, the Bureau, the Chairs of the Working Groups and the Secretariat.</td></tr><tr class="table-light"><td>19.	The report of Working Group I read as follows:</td><td><span id="WECW" class="replacement human tentative"><span class="from_repl">19</span> <span class="to_repl">17</span></span> . The report of Working Group I <span id="IXG4" class="replacement human tentative"><span class="from_repl">read</span> <span class="to_repl">reads</span></span> as follows:</td><td>19. The report of Working Group I read as follows:</td></tr><tr class="table-dark text-dark"><td>			[To be inserted] </td><td>[To be inserted]</td><td>[To be inserted]</td></tr><tr class="table-light"><td> </td><td></td><td></td></tr><tr class="table-dark text-dark"><td>20.	The report of Working Group II read as follows:</td><td><span id="LPT5" class="replacement human tentative"><span class="from_repl">20</span> <span class="to_repl">18</span></span> . The report of Working Group II <span id="64YC" class="replacement human tentative"><span class="from_repl">read</span> <span class="to_repl">reads</span></span> as follows:</td><td>20. The report of Working Group II read as follows:</td></tr><tr class="table-light"><td>			[To be inserted] </td><td>[To be inserted]</td><td>[To be inserted]</td></tr><tr class="table-dark text-dark"><td>	 DOCVARIABLE "jobn" \* MERGEFORMAT 22-06173 (E)    040522</td><td><span id="GT90" class="replacement human tentative"><span class="from_repl">DOCVARIABLE "jobn \*MERGEFORMAT 22-06173 (E) 040522</span> <span class="to_repl"></span></span></td><td>DOCVARIABLE "jobn \*MERGEFORMAT 22-06173 (E) 040522</td></tr><tr class="table-light"><td> DOCVARIABLE "Barcode" \* MERGEFORMAT *2206173*</td><td><span id="GM8S" class="replacement human tentative"><span class="from_repl">DOCVARIABLE "Barcode \*MERGEFORMAT *2206173</span> <span class="to_repl"></span></span></td><td>DOCVARIABLE "Barcode \*MERGEFORMAT *2206173</td></tr><tr class="table-dark text-dark"><td>United Nations</td><td>United Nations</td><td>United Nations</td></tr><tr class="table-light"><td>A/CN.10/2023/L.1</td><td>A/CN.10/2023/L.1</td><td>A/CN.10/2023/L.1</td></tr><tr class="table-dark text-dark"><td> </td><td></td><td></td></tr><tr class="table-light"><td>General Assembly</td><td>General Assembly</td><td>General Assembly</td></tr><tr class="table-dark text-dark"><td>Distr.: Limited</td><td>Distr.: Limited</td><td>Distr.: Limited</td></tr><tr class="table-light"><td>__ April 2023</td><td><span id="542W" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">11</span></span> April 2023</td><td>April 2023</td></tr><tr class="table-dark text-dark"><td>Original: English</td><td>Original: English</td><td>Original: English</td></tr><tr class="table-light"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT 22-06173</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-06173</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-06173</td></tr><tr class="table-dark text-dark"><td> PAGE  \* Arabic  \* MERGEFORMAT 8/ </td><td>PAGE \*Arabic \*MERGEFORMAT 8/</td><td>PAGE \*Arabic \*MERGEFORMAT 8/</td></tr><tr class="table-light"><td>__________________</td><td></td><td></td></tr><tr class="table-dark text-dark"><td>__________________</td><td></td><td></td></tr><tr class="table-light"><td>		Official Records of the General Assembly, Seventy-seventh Session, Supplement No. 42 (A/77/42).</td><td>Official Records of the General Assembly, Seventy-seventh Session, Supplement No. 42 (A/77/42).</td><td>Official Records of the General Assembly, Seventy-seventh Session, Supplement No. 42 (A/77/42).</td></tr><tr class="table-dark text-dark"><td>		Resolution 44/119 C, annex.</td><td>Resolution 44/119 C, annex.</td><td>Resolution 44/119 C, annex.</td></tr><tr class="table-light"><td>		Resolution S-10/2.</td><td>Resolution S-10/2.</td><td>Resolution S-10/2.</td></tr><tr class="table-dark text-dark"><td>		A/68/189.</td><td>A/68/189.</td><td>A/68/189.</td></tr><tr class="table-light"><td>		Official Records of the General Assembly, Seventy-seventh Session, Supplement No. 27 (A/77/27).</td><td>Official Records of the General Assembly, Seventy-seventh Session, Supplement No. 27 (A/77/27).</td><td>Official Records of the General Assembly, Seventy-seventh Session, Supplement No. 27 (A/77/27).</td></tr><tr class="table-dark text-dark"><td> PAGE  \* Arabic  \* MERGEFORMAT 9/ </td><td>PAGE \*Arabic \*MERGEFORMAT 9/</td><td>PAGE \*Arabic \*MERGEFORMAT 9/</td></tr><tr class="table-light"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT 22-06173</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-06173</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-06173</td></tr><tr class="table-dark text-dark"><td>A/CN.10/2023/L.1</td><td>A/CN.10/2023/L.1</td><td>A/CN.10/2023/L.1</td></tr></tbody>
+  </table>
+</div>
+
+</body>
+</html>
+

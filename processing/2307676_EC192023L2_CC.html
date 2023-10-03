@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+  
+}  
+
+function accept_repl(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+    <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div>
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+
+
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead>
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body"><tr class="table-light"><td> DOCVARIABLE "sss1" \* MERGEFORMAT E/C.19/2023/L.2</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/C.19/2023/L.2</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/C.19/2023/L.2</td></tr><tr class="table-dark text-dark"><td>Permanent Forum on Indigenous Issues</td><td>Permanent Forum on Indigenous Issues</td><td>Permanent Forum on Indigenous Issues</td></tr><tr class="table-light"><td>Twenty- second session</td><td>Twenty <span id="XME8" class="replacement human tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> second session</td><td>Twenty- second session</td></tr><tr class="table-dark text-dark"><td>New York, 17 – 28 April 2023</td><td>New York, <span id="BJW8" class="replacement human tentative"><span class="from_repl">17 – 28</span> <span class="to_repl">17–28</span></span> April 2023</td><td>New York, 17 – 28 April 2023</td></tr><tr class="table-light"><td>		Draft report</td><td>Draft report</td><td>Draft report</td></tr><tr class="table-dark text-dark"><td>Rapporteur: Ms. Tove Søvndahl Gant </td><td>Rapporteur: Ms. Tove Søvndahl Gant</td><td>Rapporteur: Ms. Tove Søvndahl Gant</td></tr><tr class="table-light"><td>		Chapter I</td><td>Chapter I</td><td>Chapter I</td></tr><tr class="table-dark text-dark"><td>		Matters calling for action by the Economic and Social Council or brought to its attention</td><td>Matters calling for action by the Economic and Social Council or brought to its attention</td><td>Matters calling for action by the Economic and Social Council or brought to its attention</td></tr><tr class="table-light"><td>	A.	Draft decisions recommended by the Forum for adoption by the Council</td><td>A. Draft decisions recommended by the Forum for adoption by the Council</td><td>A. Draft decisions recommended by the Forum for adoption by the Council</td></tr><tr class="table-dark text-dark"><td>1.	The Permanent Forum on Indigenous Issues recommends to the Economic and Social Council the adoption of the following draft decisions:</td><td>1. The Permanent Forum on Indigenous Issues recommends to the Economic and Social Council the adoption of the following draft decisions:</td><td>1. The Permanent Forum on Indigenous Issues recommends to the Economic and Social Council the adoption of the following draft decisions:</td></tr><tr class="table-light"><td>[To be completed]</td><td>[To be completed]</td><td>[To be completed]</td></tr><tr class="table-dark text-dark"><td>	B.	Matters brought to the attention of the Council</td><td>B. Matters brought to the attention of the Council</td><td>B. Matters brought to the attention of the Council</td></tr><tr class="table-light"><td>		Decision of the Permanent Forum</td><td>Decision of the Permanent Forum</td><td>Decision of the Permanent Forum</td></tr><tr class="table-dark text-dark"><td>2.	The following oral decision adopted by the Forum at its 1st meeting, on 17 April, is brought to the attention of the Council.</td><td>2. The following oral decision adopted by the Forum at its 1st meeting, on 17 April, is brought to the attention of the Council.</td><td>2. The following oral decision adopted by the Forum at its 1st meeting, on 17 April, is brought to the attention of the Council.</td></tr><tr class="table-light"><td>	The Forum decides to enlarge its Bureau to seven members, for its twenty-second session, to better represent each of its seven regional groups.</td><td>The Forum decides to enlarge its Bureau to seven members <span id="HI4L" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl"></span></span> for its twenty-second session <span id="OMB7" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl"></span></span> to better represent each of its seven regional groups.</td><td>The Forum decides to enlarge its Bureau to seven members, for its twenty-second session, to better represent each of its seven regional groups.</td></tr><tr class="table-dark text-dark"><td>		Recommendations of the Permanent Forum</td><td>Recommendations of the Permanent Forum</td><td>Recommendations of the Permanent Forum</td></tr><tr class="table-light"><td>3.	The Permanent Forum has identified the proposals, objectives, recommendations and areas of possible future action set out below and, through the Council, recommends that States, entities of the United Nations system, intergovernmental organizations, indigenous peoples, the private sector and non-governmental organizations assist in their realization. </td><td>3. The Permanent Forum has identified the proposals, objectives, recommendations and areas of possible future action set out below and, through the Council, recommends that States, entities of the United Nations system, intergovernmental organizations, <span id="ZADE" class="replacement human tentative"><span class="from_repl">indigenous peoples</span> <span class="to_repl">Indigenous Peoples</span></span> , the private sector and non-governmental organizations assist in their realization.</td><td>3. The Permanent Forum has identified the proposals, objectives, recommendations and areas of possible future action set out below and, through the Council, recommends that States, entities of the United Nations system, intergovernmental organizations, indigenous peoples, the private sector and non-governmental organizations assist in their realization.</td></tr><tr class="table-dark text-dark"><td>4.	It is the understanding of the Permanent Forum that the proposals, objectives, recommendations and areas of possible future action to be carried out by the United Nations as set out below will be implemented to the extent possible within the context of the approved programme of work of the relevant entities. </td><td>4. It is the understanding of the Permanent Forum that the proposals, objectives, recommendations and areas of possible future action to be carried out by the United Nations as set out below will be implemented to the extent possible within the context of the approved programme of work of the relevant entities.</td><td>4. It is the understanding of the Permanent Forum that the proposals, objectives, recommendations and areas of possible future action to be carried out by the United Nations as set out below will be implemented to the extent possible within the context of the approved programme of work of the relevant entities.</td></tr><tr class="table-light"><td>[To be completed with text of recommendations]</td><td>[To be completed with text of recommendations]</td><td>[To be completed with text of recommendations]</td></tr><tr class="table-dark text-dark"><td>		Chapter II</td><td>Chapter II</td><td>Chapter II</td></tr><tr class="table-light"><td>		Venue, dates and proceedings of the session</td><td>Venue, dates and proceedings of the session</td><td>Venue, dates and proceedings of the session</td></tr><tr class="table-dark text-dark"><td>5.	By its decision 2022/353, the Economic and Social Council decided that the twenty- second session of the Permanent Forum would be held at United Nations Headquarters from 17 – 28 April 2023. </td><td>5. By its decision 2022/353, the Economic and Social Council decided that the twenty <span id="N6FI" class="replacement human tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> second session of the Permanent Forum would be held at United Nations Headquarters from <span id="LS6T" class="replacement human tentative"><span class="from_repl">17 – 28</span> <span class="to_repl">17–28</span></span> April 2023.</td><td>5. By its decision 2022/353, the Economic and Social Council decided that the twenty- second session of the Permanent Forum would be held at United Nations Headquarters from 17 – 28 April 2023.</td></tr><tr class="table-light"><td>6.	At its 3rd and 4th meetings, on 18 April, the Permanent Forum considered agenda item 3, entitled “Discussion on the theme” Indigenous peoples, human health, planetary and territorial health and climate change: a rights-based approach”. For its consideration of the item, the Forum had before it a note by the Secretariat transmitting the  findings of the study on “Indigenous determinants of health in the 2030 Agenda”, commissioned by the Forum (E/C.19/2023/5). At its 13th meeting, on 28th April, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>6. At its 3rd and 4th meetings, on 18 April, the Permanent Forum considered agenda item 3, entitled “Discussion on the theme <span id="6TP5" class="replacement human tentative"><span class="from_repl">”</span> <span class="to_repl">, ‘</span></span> Indigenous peoples, human health, planetary and territorial health and climate change: a rights-based approach <span id="URSM" class="replacement human tentative"><span class="from_repl">”</span> <span class="to_repl">’</span></span> . For its consideration of the item, the Forum had before it a note by the Secretariat transmitting the findings of <span id="PCH1" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">a study, commissioned by</span></span> the <span id="EHFN" class="replacement human tentative"><span class="from_repl">study</span> <span class="to_repl">Forum,</span></span> on <span id="BMVY" class="replacement human tentative"><span class="from_repl">“</span> <span class="to_repl"></span></span> Indigenous determinants of health in the 2030 Agenda <span id="5DXH" class="replacement human tentative"><span class="from_repl">”, commissioned by the Forum</span> <span class="to_repl"></span></span> (E/C.19/2023/5). At its 13th meeting, on <span id="MU4Y" class="replacement human tentative"><span class="from_repl">28th</span> <span class="to_repl">28</span></span> April, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>6. At its 3rd and 4th meetings, on 18 April, the Permanent Forum considered agenda item 3, entitled “Discussion on the theme” Indigenous peoples, human health, planetary and territorial health and climate change: a rights-based approach”. For its consideration of the item, the Forum had before it a note by the Secretariat transmitting the findings of the study on “Indigenous determinants of health in the 2030 Agenda”, commissioned by the Forum (E/C.19/2023/5). At its 13th meeting, on 28th April, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-dark text-dark"><td>7.	At its 7th and 9th meetings, on 20 and 25 April, the Forum considered agenda item 4, entitled “Discussion on the six mandated areas of the Permanent Forum (economic and social development, culture, environment, education, health and human rights), with reference to the United Nations Declaration on the Rights of Indigenous Peoples, the outcome document of the World Conference on Indigenous Peoples and the 2030 Agenda for Sustainable Development”. For its consideration of the item, the Forum had before it three notes by the Secretariat transmitting a report on the System-wide Action Plan for Ensuring a Coherent Approach to Achieving the ends of the United Nations Declaration on the Rights of Indigenous Peoples, including in the 2030 Agenda: Implementation by the United Nations System (E/C.19/2023/2); the findings of the study on “Indigenous Determinants of Health in the 2030 Agenda (E/C.19/2023/5)”; and the report on the study on “Implementing Free, Prior and Informed Consent in the Context of Indigenous Peoples (E/C.19/2023/6).  At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>7. At its 7th and 9th meetings, on 20 and <span id="9ALR" class="replacement human tentative"><span class="from_repl">25</span> <span class="to_repl">24</span></span> April, the Forum considered agenda item 4, entitled “Discussion on the six mandated areas of the Permanent Forum (economic and social development, culture, environment, education, health and human rights), with reference to the United Nations Declaration on the Rights of Indigenous Peoples, the outcome document of the World Conference on Indigenous Peoples and the 2030 Agenda for Sustainable Development”. For its consideration of the item, the Forum had before it three notes by the Secretariat <span id="BBNU" class="replacement human tentative"><span class="from_repl">transmitting a report on the</span> <span class="to_repl">, entitled “</span></span> System-wide <span id="ECL0" class="replacement human tentative"><span class="from_repl">Action Plan</span> <span class="to_repl">action plan</span></span> for <span id="U9V6" class="replacement human tentative"><span class="from_repl">Ensuring</span> <span class="to_repl">ensuring</span></span> a <span id="UROC" class="replacement human tentative"><span class="from_repl">Coherent Approach</span> <span class="to_repl">coherent approach</span></span> to <span id="CX4A" class="replacement human tentative"><span class="from_repl">Achieving</span> <span class="to_repl">achieving</span></span> the ends of the United Nations Declaration on the Rights of Indigenous Peoples, including in the 2030 Agenda: <span id="GLL4" class="replacement human tentative"><span class="from_repl">Implementation</span> <span class="to_repl">implementation</span></span> by the United Nations <span id="JLR8" class="replacement human tentative"><span class="from_repl">System</span> <span class="to_repl">system”</span></span> (E/C.19/2023/2); <span id="KWBP" class="replacement human tentative"><span class="from_repl">the findings of the study on “Indigenous Determinants of Health</span> <span class="to_repl">“Indigenous determinants of health</span></span> in the 2030 Agenda <span id="7HMX" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">”</span></span> (E/C.19/2023/5) <span id="UUVY" class="replacement human tentative"><span class="from_repl">”</span> <span class="to_repl"></span></span> ; and <span id="LMOS" class="replacement human tentative"><span class="from_repl">the report on the study on</span> <span class="to_repl"></span></span> “Implementing <span id="U5OQ" class="replacement human tentative"><span class="from_repl">Free, Prior and Informed Consent</span> <span class="to_repl">free, prior and informed consent</span></span> in the <span id="38I0" class="replacement human tentative"><span class="from_repl">Context of Indigenous Peoples</span> <span class="to_repl">context of Indigenous Peoples”</span></span> (E/C.19/2023/6). At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>7. At its 7th and 9th meetings, on 20 and 25 April, the Forum considered agenda item 4, entitled “Discussion on the six mandated areas of the Permanent Forum (economic and social development, culture, environment, education, health and human rights), with reference to the United Nations Declaration on the Rights of Indigenous Peoples, the outcome document of the World Conference on Indigenous Peoples and the 2030 Agenda for Sustainable Development”. For its consideration of the item, the Forum had before it three notes by the Secretariat transmitting a report on the System-wide Action Plan for Ensuring a Coherent Approach to Achieving the ends of the United Nations Declaration on the Rights of Indigenous Peoples, including in the 2030 Agenda: Implementation by the United Nations System (E/C.19/2023/2); the findings of the study on “Indigenous Determinants of Health in the 2030 Agenda (E/C.19/2023/5)”; and the report on the study on “Implementing Free, Prior and Informed Consent in the Context of Indigenous Peoples (E/C.19/2023/6). At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-light"><td>8.	At its 9th meeting, on 24April, the Permanent Forum considered agenda item 5 (a), entitled “Dialogue with indigenous peoples”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>8. At its 9th meeting, <span id="I0BS" class="replacement human tentative"><span class="from_repl">on 24April,</span> <span class="to_repl"></span></span> the <span id="UZ72" class="replacement human tentative"><span class="from_repl">Permanent</span> <span class="to_repl"></span></span> Forum considered agenda item 5 (a), entitled “Dialogue with <span id="URAT" class="replacement human tentative"><span class="from_repl">indigenous peoples</span> <span class="to_repl">Indigenous Peoples</span></span> ”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>8. At its 9th meeting, on 24April, the Permanent Forum considered agenda item 5 (a), entitled “Dialogue with indigenous peoples”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-dark text-dark"><td>9.	At its 12th meeting on 27 April, the Forum considered agenda item 5 (b), entitled “Dialogue with Member States”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>9. At its 12th meeting <span id="U0FV" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> on 27 April, the Forum considered agenda item 5 (b), entitled “Dialogue with Member States”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>9. At its 12th meeting on 27 April, the Forum considered agenda item 5 (b), entitled “Dialogue with Member States”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-light"><td>10.	At its 10th meeting, on 25 April, the Forum considered agenda item 5 (c), entitled “Dialogue with United Nations agencies, funds and programmes”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>10. At its 10th meeting, on 25 April, the Forum considered agenda item 5 (c), entitled “Dialogue with <span id="B03P" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">the</span></span> United Nations agencies, funds and programmes”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>10. At its 10th meeting, on 25 April, the Forum considered agenda item 5 (c), entitled “Dialogue with United Nations agencies, funds and programmes”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-dark text-dark"><td>11.	At its 5th and 6th meetings, on 19 April, the Forum considered agenda item 5 (d), entitled “Human rights dialogue with the Special Rapporteur on the rights of indigenous peoples and the Expert Mechanism on the Rights of Indigenous Peoples”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B). </td><td>11. At its 5th and 6th meetings, on 19 April, the Forum considered agenda item 5 (d), entitled “Human rights dialogue with the Special Rapporteur on the rights of <span id="YXKD" class="replacement human tentative"><span class="from_repl">indigenous peoples</span> <span class="to_repl">Indigenous Peoples</span></span> and the Expert Mechanism on the Rights of Indigenous Peoples”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>11. At its 5th and 6th meetings, on 19 April, the Forum considered agenda item 5 (d), entitled “Human rights dialogue with the Special Rapporteur on the rights of indigenous peoples and the Expert Mechanism on the Rights of Indigenous Peoples”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-light"><td>12.	At seven informal meetings, including two sets of two meetings held in parallel, from 26 to 27 April, the Forum considered agenda item 5 (e), entitled “Regional dialogues”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>12. At seven informal meetings, including two sets of two meetings held in parallel, <span id="1MFP" class="replacement human tentative"><span class="from_repl">from</span> <span class="to_repl">on</span></span> 26 <span id="38U8" class="replacement human tentative"><span class="from_repl">to</span> <span class="to_repl">and</span></span> 27 April, the Forum considered agenda item 5 (e), entitled “Regional dialogues”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>12. At seven informal meetings, including two sets of two meetings held in parallel, from 26 to 27 April, the Forum considered agenda item 5 (e), entitled “Regional dialogues”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-dark text-dark"><td>13. At its 2nd meeting, on 17 April, the Forum considered item 5 (f), entitled “Dialogue on Indigenous platforms established within United Nations entities”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>13. At its 2nd meeting, on 17 April, the Forum considered item 5 (f), entitled “Dialogue on Indigenous platforms established within United Nations entities”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>13. At its 2nd meeting, on 17 April, the Forum considered item 5 (f), entitled “Dialogue on Indigenous platforms established within United Nations entities”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-light"><td> 14.	Also at its 2nd meeting, on 17 April, the Forum considered agenda item </td><td>14. Also at its 2nd meeting, on 17 April, the Forum considered agenda item</td><td>14. Also at its 2nd meeting, on 17 April, the Forum considered agenda item</td></tr><tr class="table-dark text-dark"><td>5 (g) entitled “Thematic dialogues”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B). </td><td>5 (g <span id="GRAI" class="replacement human tentative"><span class="from_repl">)</span> <span class="to_repl">),</span></span> entitled “Thematic dialogues”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>5 (g) entitled “Thematic dialogues”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-light"><td>14.	At its 8th meeting, the Forum considered agenda item 6, entitled “Future work of the Permanent Forum, including issues considered by the Economic and Social Council and emerging issues”. For its consideration of the item the Forum had before it a note by the Secretariat transmitting the report of the international expert group meeting on the theme “Truth, transitional justice and reconciliation processes”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B). </td><td><span id="5CXS" class="replacement human tentative"><span class="from_repl">14</span> <span class="to_repl">15</span></span> . At its 8th meeting <span id="99EJ" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">, on 24 April</span></span> , the Forum considered agenda item 6, entitled “Future work of the Permanent Forum, including issues considered by the Economic and Social Council <span id="9LG6" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">, the outcome document of the World Conference on Indigenous Peoples</span></span> and emerging issues”. For its consideration of the item <span id="WLTP" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> the Forum had before it a note by the Secretariat transmitting the report of the international expert group meeting on the theme “Truth, transitional justice and reconciliation processes <span id="QTGW" class="replacement human tentative"><span class="from_repl">”</span> <span class="to_repl">” (E/C.19/2023/3)</span></span> . At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td><td>14. At its 8th meeting, the Forum considered agenda item 6, entitled “Future work of the Permanent Forum, including issues considered by the Economic and Social Council and emerging issues”. For its consideration of the item the Forum had before it a note by the Secretariat transmitting the report of the international expert group meeting on the theme “Truth, transitional justice and reconciliation processes”. At its 13th meeting, the Forum considered and adopted its recommendations submitted under that item (see chap. I, sect. B).</td></tr><tr class="table-dark text-dark"><td>15.	At its 13th meeting, the Forum considered agenda item 7, entitled “Provisional agenda of the twenty- third session”, and agenda item 8, entitled “Adoption of the report”. At the same meeting, the Forum considered and adopted a draft decision submitted under that item (see chap. I, sect. A).</td><td><span id="8V2K" class="replacement human tentative"><span class="from_repl">15</span> <span class="to_repl">16</span></span> . At its 13th meeting, the Forum considered agenda item 7, entitled “Provisional agenda of the twenty <span id="FA9E" class="replacement human tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> third session”, and agenda item 8, entitled “Adoption of the report <span id="NX0W" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">of the Permanent Forum on its twenty-second session</span></span> ”. At the same meeting, the Forum considered and adopted a draft decision submitted under that item (see chap. I, sect. A).</td><td>15. At its 13th meeting, the Forum considered agenda item 7, entitled “Provisional agenda of the twenty- third session”, and agenda item 8, entitled “Adoption of the report”. At the same meeting, the Forum considered and adopted a draft decision submitted under that item (see chap. I, sect. A).</td></tr><tr class="table-light"><td>16.	At three informal closed meetings, on 20, 26 and 28 April,  the Permanent Forum met to hold discussions.</td><td><span id="P3P4" class="replacement human tentative"><span class="from_repl">16</span> <span class="to_repl">17</span></span> . At three informal closed meetings, on 20, 26 and 28 April, the Permanent Forum met to hold discussions.</td><td>16. At three informal closed meetings, on 20, 26 and 28 April, the Permanent Forum met to hold discussions.</td></tr><tr class="table-dark text-dark"><td>		</td><td></td><td></td></tr><tr class="table-light"><td>		</td><td></td><td></td></tr><tr class="table-dark text-dark"><td>Chapter III</td><td>Chapter III</td><td>Chapter III</td></tr><tr class="table-light"><td>		Adoption of the report of the Forum on its twenty- seocond session</td><td>Adoption of the report of the Forum on its twenty- <span id="BZDN" class="replacement human tentative"><span class="from_repl">seocond</span> <span class="to_repl">second</span></span> session</td><td>Adoption of the report of the Forum on its twenty- seocond session</td></tr><tr class="table-dark text-dark"><td>17.	At the 13th meeting, the Rapporteur introduced the draft decisions and recommendations and the draft report of the Permanent Forum on its twenty-second session.</td><td><span id="PGQ4" class="replacement human tentative"><span class="from_repl">17</span> <span class="to_repl">18</span></span> . At the 13th meeting, the Rapporteur introduced the draft decisions and recommendations and the draft report of the Permanent Forum on its twenty-second session.</td><td>17. At the 13th meeting, the Rapporteur introduced the draft decisions and recommendations and the draft report of the Permanent Forum on its twenty-second session.</td></tr><tr class="table-light"><td>18.	At the same meeting, the Permanent Forum adopted its draft report.</td><td><span id="BG9Q" class="replacement human tentative"><span class="from_repl">18</span> <span class="to_repl">19</span></span> . At the same meeting, the Permanent Forum adopted its draft report.</td><td>18. At the same meeting, the Permanent Forum adopted its draft report.</td></tr><tr class="table-dark text-dark"><td>		Chapter IV</td><td>Chapter IV</td><td>Chapter IV</td></tr><tr class="table-light"><td>		Organization of the session</td><td>Organization of the session</td><td>Organization of the session</td></tr><tr class="table-dark text-dark"><td>	A.	Opening and duration of the session</td><td>A. Opening and duration of the session</td><td>A. Opening and duration of the session</td></tr><tr class="table-light"><td>19.	The Permanent Forum held its twenty- second session at United Nations Headquarters from 17 to 28 April 2023. It held 13 formal meetings, including 3 closed meetings, and  10 informal meetings, including  3 closed meetings and  2 meetings in parallel, twice, to consider the items on its agenda.</td><td><span id="O61G" class="replacement human tentative"><span class="from_repl">19</span> <span class="to_repl">20</span></span> . The Permanent Forum held its twenty <span id="VG1U" class="replacement human tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> second session at United Nations Headquarters from 17 to 28 April 2023. It held 13 formal meetings, including 3 closed meetings, and 10 informal meetings, including 3 closed meetings and 2 meetings in parallel, twice, to consider the items on its agenda.</td><td>19. The Permanent Forum held its twenty- second session at United Nations Headquarters from 17 to 28 April 2023. It held 13 formal meetings, including 3 closed meetings, and 10 informal meetings, including 3 closed meetings and 2 meetings in parallel, twice, to consider the items on its agenda.</td></tr><tr class="table-dark text-dark"><td>20.	At the 1st meeting, on 17 April, the session was opened by the temporary Chair, the Under-Secretary-General for Economic and Social Affairs. At the opening ceremony, the traditional Chief of the Onondaga Nation, Tadodaho Sid Hill, delivered a welcoming address. At the same meeting, the Forum adopted an oral draft decision (see chap. I, sect. B).</td><td><span id="2C7I" class="replacement human tentative"><span class="from_repl">20</span> <span class="to_repl">21</span></span> . At the 1st meeting, on 17 April, the session was opened by the temporary Chair, the Under-Secretary-General for Economic and Social Affairs. At the opening ceremony, the traditional Chief of the Onondaga Nation, Tadodaho Sid Hill, delivered a welcoming address. At the same meeting, the Forum adopted an oral draft decision (see chap. I, sect. B).</td><td>20. At the 1st meeting, on 17 April, the session was opened by the temporary Chair, the Under-Secretary-General for Economic and Social Affairs. At the opening ceremony, the traditional Chief of the Onondaga Nation, Tadodaho Sid Hill, delivered a welcoming address. At the same meeting, the Forum adopted an oral draft decision (see chap. I, sect. B).</td></tr><tr class="table-light"><td>21.	At the same meeting, statements were made by the Secretary-General of the United Nations, the President of the General Assembly, the President of Colombia, the President of the Economic and Social Council, the Under-Secretary-General for Economic and Social Affairs, and the United States Secretary of the Interior. </td><td><span id="4P5D" class="replacement human tentative"><span class="from_repl">21</span> <span class="to_repl">22</span></span> . At the same meeting, statements were made by the Secretary-General of the United Nations, the President of the General Assembly, the President of Colombia, the President of the Economic and Social Council, the Under-Secretary-General for Economic and Social Affairs <span id="BQ7Q" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl"></span></span> and the United States Secretary of the Interior.</td><td>21. At the same meeting, statements were made by the Secretary-General of the United Nations, the President of the General Assembly, the President of Colombia, the President of the Economic and Social Council, the Under-Secretary-General for Economic and Social Affairs, and the United States Secretary of the Interior.</td></tr><tr class="table-dark text-dark"><td>	B.	Attendance</td><td>B. Attendance</td><td>B. Attendance</td></tr><tr class="table-light"><td>22.	Members of the Forum and representatives of Governments, intergovernmental organizations and bodies, United Nations entities and non-governmental and indigenous organizations attended the session. The list of participants will be published at a later date. </td><td><span id="SFTP" class="replacement human tentative"><span class="from_repl">22</span> <span class="to_repl">23</span></span> . Members of the Forum and representatives of Governments, intergovernmental organizations and bodies, United Nations entities and non-governmental and <span id="50RF" class="replacement human tentative"><span class="from_repl">indigenous</span> <span class="to_repl">Indigenous</span></span> organizations attended the session. The list of participants will be published at a later date.</td><td>22. Members of the Forum and representatives of Governments, intergovernmental organizations and bodies, United Nations entities and non-governmental and indigenous organizations attended the session. The list of participants will be published at a later date.</td></tr><tr class="table-dark text-dark"><td>	C.	Election of officers</td><td>C. Election of officers</td><td>C. Election of officers</td></tr><tr class="table-light"><td>23.	At its 1st meeting, the Forum elected the following members of the Bureau by acclamation: </td><td><span id="F8VI" class="replacement human tentative"><span class="from_repl">23</span> <span class="to_repl">24</span></span> . At its 1st meeting, the Forum elected the following members of the Bureau by acclamation:</td><td>23. At its 1st meeting, the Forum elected the following members of the Bureau by acclamation:</td></tr><tr class="table-dark text-dark"><td>Chair:</td><td>Chair:</td><td>Chair:</td></tr><tr class="table-light"><td>	Darío José Mejía Montalvo</td><td>Darío José Mejía Montalvo</td><td>Darío José Mejía Montalvo</td></tr><tr class="table-dark text-dark"><td>Vice-Chairs:</td><td>Vice-Chairs:</td><td>Vice-Chairs:</td></tr><tr class="table-light"><td>Geoffrey Scott Roth </td><td>Geoffrey Scott Roth</td><td>Geoffrey Scott Roth</td></tr><tr class="table-dark text-dark"><td>Suleiman Mamutov,  </td><td>Suleiman Mamutov <span id="3HQ5" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl"></span></span></td><td>Suleiman Mamutov,</td></tr><tr class="table-light"><td>Hindou Oumarou Ibrahim </td><td>Hindou Oumarou Ibrahim</td><td>Hindou Oumarou Ibrahim</td></tr><tr class="table-dark text-dark"><td>Hannah McGlade</td><td>Hannah McGlade</td><td>Hannah McGlade</td></tr><tr class="table-light"><td>Hanieh Moghani </td><td>Hanieh Moghani</td><td>Hanieh Moghani</td></tr><tr class="table-dark text-dark"><td>Rapporteur:</td><td>Rapporteur:</td><td>Rapporteur:</td></tr><tr class="table-light"><td>	Tove Søvndahl Gant</td><td>Tove Søvndahl Gant</td><td>Tove Søvndahl Gant</td></tr><tr class="table-dark text-dark"><td>	</td><td></td><td></td></tr><tr class="table-light"><td>	D.	Agenda</td><td>D. Agenda</td><td>D. Agenda</td></tr><tr class="table-dark text-dark"><td>24.	At its 1st meeting, the Forum adopted the provisional agenda contained in document E/C.19/2023/1.</td><td><span id="DDBF" class="replacement human tentative"><span class="from_repl">24</span> <span class="to_repl">25</span></span> . At its 1st meeting, the Forum adopted the provisional agenda contained in document E/C.19/2023/1.</td><td>24. At its 1st meeting, the Forum adopted the provisional agenda contained in document E/C.19/2023/1.</td></tr><tr class="table-light"><td>	E.	Documentation</td><td>E. Documentation</td><td>E. Documentation</td></tr><tr class="table-dark text-dark"><td>25.	The list of the documents before the Forum at its twenty-second session will be published at a later date.</td><td><span id="NLKA" class="replacement human tentative"><span class="from_repl">25</span> <span class="to_repl">26</span></span> . The list of the documents before the Forum at its twenty-second session will be published at a later date.</td><td>25. The list of the documents before the Forum at its twenty-second session will be published at a later date.</td></tr><tr class="table-light"><td>United Nations</td><td>United Nations</td><td>United Nations</td></tr><tr class="table-dark text-dark"><td>E/C.19/ 2023/L.2</td><td><span id="RQ0K" class="replacement human tentative"><span class="from_repl">E/C.19/ 2023/L.2</span> <span class="to_repl">E/C.19/2023/L.2</span></span></td><td>E/C.19/ 2023/L.2</td></tr><tr class="table-light"><td> </td><td></td><td></td></tr><tr class="table-dark text-dark"><td>Economic and Social Council</td><td>Economic and Social Council</td><td>Economic and Social Council</td></tr><tr class="table-light"><td>Distr.: Limited</td><td>Distr.: Limited</td><td>Distr.: Limited</td></tr><tr class="table-dark text-dark"><td>28 April 2023</td><td><span id="UL1G" class="replacement human tentative"><span class="from_repl">28</span> <span class="to_repl">24</span></span> April 2023</td><td>28 April 2023</td></tr><tr class="table-light"><td>Original: English</td><td>Original: English</td><td>Original: English</td></tr><tr class="table-dark text-dark"><td>22-06398 (E)    040522</td><td>22-06398 (E) 040522</td><td>22-06398 (E) 040522</td></tr><tr class="table-light"><td>*2206398*</td><td>*2206398</td><td>*2206398</td></tr><tr class="table-dark text-dark"><td> PAGE  \* Arabic  \* MERGEFORMAT 2/ NUMPAGES  \* Arabic  \* MERGEFORMAT 3</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 3</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 3</td></tr><tr class="table-light"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT 22-06398</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-06398</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-06398</td></tr><tr class="table-dark text-dark"><td> PAGE  \* Arabic  \* MERGEFORMAT 3/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-light"><td> DOCVARIABLE "sss1" \* MERGEFORMAT E/C.19/ 2023/L.2</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/C.19/ 2023/L.2</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/C.19/ 2023/L.2</td></tr></tbody>
+  </table>
+</div>
+
+</body>
+</html>
+

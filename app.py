@@ -42,6 +42,19 @@ no_context_first_token_dict=open_sqld(no_context_first_token_dict_fpath)
 #     else:
 #         user = request.args.get('nm')
 #         return redirect(url_for('success',name = user))
+@app.route('/check_repl',methods = ['POST', 'GET'])
+def check_repl():
+    cur_dict={}
+    cur_word = request.args.get('word')
+    output=refined_first_token_dict.get(cur_word,{})
+    cur_dict["output"]=output
+
+    #cur_dict["link"]=cur_link
+    # try: output=read_file(cur_link)
+    # except: output=json.dumps(cur_dict) 
+    return json.dumps(cur_dict) 
+
+
 
 @app.route('/interface',methods = ['POST', 'GET'])
 def interface():
@@ -86,6 +99,7 @@ def process():
         cur_dict["time"]=time.ctime()
         cur_dict["action"]="processed"
         cur_dict["success"]=True
+        cur_dict["analysis_dict"]=analysis_dict
         fopen=open("query_log.txt","a")
         fopen.write(json.dumps(cur_dict)+"\n")
         fopen.close()

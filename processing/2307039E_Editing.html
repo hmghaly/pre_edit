@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+  
+}  
+
+function accept_repl(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+    <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div>
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+
+
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead>
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body"><tr class="table-light"><td>   General Assembly</td><td><span id="XR9I" class="replacement human tentative"><span class="from_repl">General Assembly</span> <span class="to_repl"></span></span></td><td>General Assembly</td></tr><tr class="table-dark text-dark"><td>Seventy-seventh session</td><td>Seventy-seventh session</td><td>Seventy-seventh session</td></tr><tr class="table-light"><td>Agenda items 59 and 65 (a)</td><td>Agenda items 59 and 65 (a)</td><td>Agenda items 59 and 65 (a)</td></tr><tr class="table-dark text-dark"><td>The situation in the temporarily occupied territories of Ukraine</td><td>The situation in the temporarily occupied territories of Ukraine</td><td>The situation in the temporarily occupied territories of Ukraine</td></tr><tr class="table-light"><td>Rights of indigenous peoples</td><td>Rights of indigenous peoples <span id="A8LK" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">: rights of indigenous peoples</span></span></td><td>Rights of indigenous peoples</td></tr><tr class="table-dark text-dark"><td>			</td><td></td><td></td></tr><tr class="table-light"><td>      Letter dated 13 April 2023 from the Permanent Representative of </td><td>Letter dated 13 April 2023 from the Permanent Representative of</td><td>Letter dated 13 April 2023 from the Permanent Representative of</td></tr><tr class="table-dark text-dark"><td>      Ukraine to the United Nations addressed to the Secretary-General  </td><td>Ukraine to the United Nations addressed to the Secretary-General</td><td>Ukraine to the United Nations addressed to the Secretary-General</td></tr><tr class="table-light"><td>			</td><td></td><td></td></tr><tr class="table-dark text-dark"><td>4132/28-194/501-42114				        		     13 April 2023</td><td><span id="OV9Z" class="replacement human tentative"><span class="from_repl">4132/28-194/501-42114 13 April 2023</span> <span class="to_repl"></span></span></td><td>4132/28-194/501-42114 13 April 2023</td></tr><tr class="table-light"><td>Excellency,</td><td><span id="LTQS" class="replacement human tentative"><span class="from_repl">Excellency,</span> <span class="to_repl"></span></span></td><td>Excellency,</td></tr><tr class="table-dark text-dark"><td>I have the honor to enclose herewith the Comment of the Permanent Mission of Ukraine to the United Nations with regard to the release as a UNGA document A/77/812 of 24 March 2023 of the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea.”</td><td>I have the <span id="PGOO" class="replacement human tentative"><span class="from_repl">honor</span> <span class="to_repl">honour</span></span> to enclose herewith the <span id="H3MF" class="replacement human tentative"><span class="from_repl">Comment</span> <span class="to_repl">comment</span></span> of the Permanent Mission of Ukraine to the United Nations with regard to the release as a <span id="U42W" class="replacement human tentative"><span class="from_repl">UNGA</span> <span class="to_repl"></span></span> document <span id="0MFJ" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">of the General Assembly, under the symbol</span></span> A/77/812 <span id="MKQF" class="replacement human tentative"><span class="from_repl">of</span> <span class="to_repl">, dated</span></span> 24 March 2023 <span id="EJH2" class="replacement human tentative"><span class="from_repl">of</span> <span class="to_repl">,</span></span> the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea <span id="THP5" class="replacement human tentative"><span class="from_repl">.</span> <span class="to_repl"></span></span> ” <span id="UTOH" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">(see annex).</span></span></td><td>I have the honor to enclose herewith the Comment of the Permanent Mission of Ukraine to the United Nations with regard to the release as a UNGA document A/77/812 of 24 March 2023 of the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea.”</td></tr><tr class="table-light"><td>I would appreciate your kind assistance in having this letter and its enclosure distributed as a document of the General Assembly under agenda item 59 “The situation in the temporarily occupied territories of Ukraine”, agenda item 65 a) “Rights of indigenous peoples” of its 77th session, and the General Assembly Eleventh Emergency Special Session.</td><td>I would appreciate your kind assistance in having <span id="WC2C" class="replacement human tentative"><span class="from_repl">this</span> <span class="to_repl">the present</span></span> letter and its <span id="0NYV" class="replacement human tentative"><span class="from_repl">enclosure</span> <span class="to_repl">annex</span></span> distributed as a document of the General Assembly <span id="ETCI" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> under agenda <span id="NKX9" class="replacement human tentative"><span class="from_repl">item</span> <span class="to_repl">items</span></span> 59 <span id="M4IZ" class="replacement human tentative"><span class="from_repl">“The situation in the temporarily occupied territories of Ukraine”, agenda item</span> <span class="to_repl">and</span></span> 65 <span id="MTD3" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">(</span></span> a <span id="HQK3" class="replacement human tentative"><span class="from_repl">) “Rights of indigenous peoples” of its 77th session, and the General Assembly Eleventh Emergency Special Session</span> <span class="to_repl">)</span></span> .</td><td>I would appreciate your kind assistance in having this letter and its enclosure distributed as a document of the General Assembly under agenda item 59 “The situation in the temporarily occupied territories of Ukraine”, agenda item 65 a) “Rights of indigenous peoples” of its 77th session, and the General Assembly Eleventh Emergency Special Session.</td></tr><tr class="table-dark text-dark"><td>Please accept, Excellency, the assurances of my highest consideration.</td><td><span id="VW1J" class="replacement human tentative"><span class="from_repl">Please accept, Excellency, the assurances of my highest consideration.</span> <span class="to_repl"></span></span></td><td>Please accept, Excellency, the assurances of my highest consideration.</td></tr><tr class="table-light"><td>Sincerely,</td><td><span id="C3L3" class="replacement human tentative"><span class="from_repl">Sincerely,</span> <span class="to_repl"></span></span></td><td>Sincerely,</td></tr><tr class="table-dark text-dark"><td>Sergiy Kyslytsya</td><td><span id="8WD4" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">(Signed)</span></span> Sergiy Kyslytsya</td><td>Sergiy Kyslytsya</td></tr><tr class="table-light"><td>Ambassador,</td><td>Ambassador <span id="WIHS" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl"></span></span></td><td>Ambassador,</td></tr><tr class="table-dark text-dark"><td>Permanent Representative</td><td>Permanent Representative</td><td>Permanent Representative</td></tr><tr class="table-light"><td>H.E. Mr. António Guterres </td><td><span id="E6Z3" class="replacement human tentative"><span class="from_repl">H.E. Mr. António Guterres</span> <span class="to_repl"></span></span></td><td>H.E. Mr. António Guterres</td></tr><tr class="table-dark text-dark"><td>Secretary-General </td><td><span id="N7EZ" class="replacement human tentative"><span class="from_repl">Secretary-General</span> <span class="to_repl"></span></span></td><td>Secretary-General</td></tr><tr class="table-light"><td>of the United Nations</td><td><span id="JAEH" class="replacement human tentative"><span class="from_repl">of the United Nations</span> <span class="to_repl"></span></span></td><td>of the United Nations</td></tr><tr class="table-dark text-dark"><td>New York </td><td><span id="1NRW" class="replacement human tentative"><span class="from_repl">New York</span> <span class="to_repl"></span></span></td><td>New York</td></tr><tr class="table-light"><td>CC:</td><td><span id="JWY7" class="replacement human tentative"><span class="from_repl">CC:</span> <span class="to_repl"></span></span></td><td>CC:</td></tr><tr class="table-dark text-dark"><td>H.E. Mr. Csaba Kőrösi</td><td><span id="S481" class="replacement human tentative"><span class="from_repl">H.E. Mr. Csaba Kőrösi</span> <span class="to_repl"></span></span></td><td>H.E. Mr. Csaba Kőrösi</td></tr><tr class="table-light"><td>President of the 77th session </td><td><span id="PJD3" class="replacement human tentative"><span class="from_repl">President of the 77th session</span> <span class="to_repl"></span></span></td><td>President of the 77th session</td></tr><tr class="table-dark text-dark"><td>of the United Nations General Assembly</td><td><span id="EUQB" class="replacement human tentative"><span class="from_repl">of the United Nations General Assembly</span> <span class="to_repl"></span></span></td><td>of the United Nations General Assembly</td></tr><tr class="table-light"><td>New York</td><td><span id="H3T7" class="replacement human tentative"><span class="from_repl">New York</span> <span class="to_repl"></span></span></td><td>New York</td></tr><tr class="table-dark text-dark"><td></td><td><span id="6DYB" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Annex to the letter dated 13 April 2023 from the Permanent Representative of</span></span></td><td></td></tr><tr class="table-light"><td></td><td><span id="PP8V" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Ukraine to the United Nations addressed to the Secretary-General</span></span></td><td></td></tr><tr class="table-dark text-dark"><td>Comment of the Permanent Mission of Ukraine to the United Nations</td><td>Comment of the Permanent Mission of Ukraine to the United Nations</td><td>Comment of the Permanent Mission of Ukraine to the United Nations</td></tr><tr class="table-light"><td>with regard to the release as a UNGA document A/77/812 of 24 March 2023</td><td>with regard to the release as a <span id="GSSH" class="replacement human tentative"><span class="from_repl">UNGA</span> <span class="to_repl"></span></span> document <span id="M591" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">of the General Assembly, under the symbol</span></span> A/77/812 <span id="C6Q4" class="replacement human tentative"><span class="from_repl">of</span> <span class="to_repl">, dated</span></span> 24 March 2023 <span id="GF6K" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span></td><td>with regard to the release as a UNGA document A/77/812 of 24 March 2023</td></tr><tr class="table-dark text-dark"><td> of the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea” </td><td><span id="BS94" class="replacement human tentative"><span class="from_repl">of</span> <span class="to_repl"></span></span> the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea”</td><td>of the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea”</td></tr><tr class="table-light"><td>The Permanent Mission of Ukraine to the Un condemns in the strongest terms another attempts by the Russian Federation to misuse the Un platform for spreading outright lies and legitimizing the outcomes of its aggression against Ukraine.</td><td>The Permanent Mission of Ukraine to the <span id="O924" class="replacement human tentative"><span class="from_repl">Un</span> <span class="to_repl">United Nations</span></span> condemns in the strongest terms another <span id="XO6Q" class="replacement human tentative"><span class="from_repl">attempts</span> <span class="to_repl">attempt</span></span> by the Russian Federation to misuse the <span id="7T6R" class="replacement human tentative"><span class="from_repl">Un</span> <span class="to_repl">United Nations</span></span> platform <span id="PVLF" class="replacement human tentative"><span class="from_repl">for spreading</span> <span class="to_repl">to spread</span></span> outright lies and <span id="V4J5" class="replacement human tentative"><span class="from_repl">legitimizing</span> <span class="to_repl">legitimize</span></span> the outcomes of its aggression against Ukraine.</td><td>The Permanent Mission of Ukraine to the Un condemns in the strongest terms another attempts by the Russian Federation to misuse the Un platform for spreading outright lies and legitimizing the outcomes of its aggression against Ukraine.</td></tr><tr class="table-dark text-dark"><td>The release of the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea” as an UNGA document A/77/812 of 24 March 2023 serves the purpose of creating a smokescreen to hide the dire human rights situation in the temporary occupied Crimean Peninsula, marked in particular with unabated repressions against the Crimean Tatar indigenous people.</td><td>The release of the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea” as <span id="21O9" class="replacement human tentative"><span class="from_repl">an UNGA</span> <span class="to_repl">a</span></span> document <span id="2UEU" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">of the General Assembly, under the symbol</span></span> A/77/812 <span id="A6MN" class="replacement human tentative"><span class="from_repl">of</span> <span class="to_repl">, dated</span></span> 24 March 2023 <span id="TWUR" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> serves the purpose of creating a smokescreen to hide the dire human rights situation in the <span id="W4QS" class="replacement human tentative"><span class="from_repl">temporary</span> <span class="to_repl">temporarily</span></span> occupied Crimean Peninsula, marked in particular <span id="3AFL" class="replacement human tentative"><span class="from_repl">with</span> <span class="to_repl">by</span></span> unabated repressions against the Crimean Tatar indigenous people.</td><td>The release of the statement of the so-called “council of Crimean Tatars under the head of the republic of Crimea” as an UNGA document A/77/812 of 24 March 2023 serves the purpose of creating a smokescreen to hide the dire human rights situation in the temporary occupied Crimean Peninsula, marked in particular with unabated repressions against the Crimean Tatar indigenous people.</td></tr><tr class="table-light"><td>To this aim Russia attempts to silence the only representative organ of the Crimean Tatar people – the Mejlis, elected by the Crimean Tatar people according to its own procedures and in full compliance with the Un Declaration on the Rights of Indigenous Peoples – creating instead puppet structures, which, as follows from the very titles, are controlled and orchestrated by the Russian occupation administration in Crimea.</td><td><span id="H6FD" class="replacement human tentative"><span class="from_repl">To</span> <span class="to_repl">With</span></span> this aim <span id="LS39" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> Russia <span id="4VBC" class="replacement human tentative"><span class="from_repl">attempts</span> <span class="to_repl">is attempting</span></span> to silence the only representative organ of the Crimean Tatar people – the Mejlis, elected by the Crimean Tatar people <span id="W3J8" class="replacement human tentative"><span class="from_repl">according to</span> <span class="to_repl">in accordance with</span></span> its own procedures and in full compliance with the <span id="TUWC" class="replacement human tentative"><span class="from_repl">Un</span> <span class="to_repl">United Nations</span></span> Declaration on the Rights of Indigenous Peoples – creating instead puppet structures, which, as follows from <span id="G7JC" class="replacement human tentative"><span class="from_repl">the</span> <span class="to_repl">their</span></span> very titles, are controlled and orchestrated by the Russian occupation administration in Crimea.</td><td>To this aim Russia attempts to silence the only representative organ of the Crimean Tatar people – the Mejlis, elected by the Crimean Tatar people according to its own procedures and in full compliance with the Un Declaration on the Rights of Indigenous Peoples – creating instead puppet structures, which, as follows from the very titles, are controlled and orchestrated by the Russian occupation administration in Crimea.</td></tr><tr class="table-dark text-dark"><td>It is outrageous that the Russian Federation continues to disregard numerous resolutions of the UN General Assembly, adopted in response to its illegal occupation of the Autonomous Republic of Crimea and the city of Sevastopol, Ukraine.      </td><td>It is outrageous that the Russian Federation continues to disregard numerous resolutions of the <span id="K0JH" class="replacement human tentative"><span class="from_repl">UN</span> <span class="to_repl"></span></span> General Assembly <span id="JR0K" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl"></span></span> adopted in response to its illegal occupation of the Autonomous Republic of Crimea and the city of Sevastopol, Ukraine.</td><td>It is outrageous that the Russian Federation continues to disregard numerous resolutions of the UN General Assembly, adopted in response to its illegal occupation of the Autonomous Republic of Crimea and the city of Sevastopol, Ukraine.</td></tr><tr class="table-light"><td>On 27 March 2014, the United Nations General Assembly adopted resolution 68/262 “Territorial Integrity of Ukraine”, affirming its full commitment to the sovereignty, political independence, unity and territorial integrity of Ukraine within its internationally recognized borders. The General Assembly also called upon all States, international organizations and specialized agencies not to recognize any alteration of the status of the Autonomous Republic of Crimea and the city of Sevastopol on the basis of the so-called “referendum”.</td><td>On 27 March 2014, the <span id="593C" class="replacement human tentative"><span class="from_repl">United Nations</span> <span class="to_repl"></span></span> General Assembly adopted resolution 68/262 <span id="L74E" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">, entitled</span></span> “Territorial <span id="PN0B" class="replacement human tentative"><span class="from_repl">Integrity</span> <span class="to_repl">integrity</span></span> of Ukraine”, affirming its full commitment to the sovereignty, political independence, unity and territorial integrity of Ukraine within its internationally recognized borders. The General Assembly also called upon all States, international organizations and specialized agencies not to recognize any alteration of the status of the Autonomous Republic of Crimea and the city of Sevastopol on the basis of the so-called “referendum”.</td><td>On 27 March 2014, the United Nations General Assembly adopted resolution 68/262 “Territorial Integrity of Ukraine”, affirming its full commitment to the sovereignty, political independence, unity and territorial integrity of Ukraine within its internationally recognized borders. The General Assembly also called upon all States, international organizations and specialized agencies not to recognize any alteration of the status of the Autonomous Republic of Crimea and the city of Sevastopol on the basis of the so-called “referendum”.</td></tr><tr class="table-dark text-dark"><td>Despite the sanctions imposed in response to Russian actions and the clear demands of the international community, the Russian Federation has not abandoned its occupation of Crimea. On the contrary, continuing blatant violations of human rights in Crimea, including indigenous Crimean Tatar people’s rights, have become the tip of an iceberg of Russia’s ongoing all-out aggression against Ukraine, which has taken a terrible human toll, leaving tens of thousands of civilians killed, injured or maimed.</td><td>Despite the sanctions imposed in response to Russian actions and the clear demands of the international community, the Russian Federation has not abandoned its occupation of Crimea. On the contrary, continuing blatant violations of human rights in Crimea, including indigenous Crimean Tatar people's rights, have become the tip of an iceberg of Russia's ongoing all-out aggression against Ukraine, which has taken a terrible human toll, leaving tens of thousands of civilians killed, injured or maimed.</td><td>Despite the sanctions imposed in response to Russian actions and the clear demands of the international community, the Russian Federation has not abandoned its occupation of Crimea. On the contrary, continuing blatant violations of human rights in Crimea, including indigenous Crimean Tatar people's rights, have become the tip of an iceberg of Russia's ongoing all-out aggression against Ukraine, which has taken a terrible human toll, leaving tens of thousands of civilians killed, injured or maimed.</td></tr><tr class="table-light"><td>Moreover, for more than six years, the aggressor state has been shamelessly ignoring the decision of the UN International Court of Justice on the immediate restoration of rights of the Mejlis of the Crimean Tatar People. Despite the decision mentioned, Russian occupants continue to prohibit the entry of the leaders of the Crimean Tatar People, Mustafa Dzhemilev and Refat Chubarov to the occupied peninsula, keeping in illegal detention more than 180 Ukrainian citizens from Crimea, –including 116 Crimean Tatars, among others the First Deputy Chairman of the Mejlis of the Crimean Tatar People, Nariman Dzhelyal, who are being prosecuted on trumped-up and politically motivated charges.</td><td>Moreover, for more than six years, the aggressor <span id="L05B" class="replacement human tentative"><span class="from_repl">state</span> <span class="to_repl">State</span></span> has been shamelessly ignoring the decision of the <span id="VX5P" class="replacement human tentative"><span class="from_repl">UN</span> <span class="to_repl"></span></span> International Court of Justice on the immediate restoration of rights of the Mejlis of the Crimean Tatar People. Despite the decision mentioned, Russian <span id="9HEE" class="replacement human tentative"><span class="from_repl">occupants</span> <span class="to_repl">occupiers</span></span> continue to prohibit the entry of the leaders of the Crimean Tatar <span id="VEJH" class="replacement human tentative"><span class="from_repl">People</span> <span class="to_repl">people</span></span> , Mustafa Dzhemilev and Refat Chubarov <span id="B8M8" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> to the occupied peninsula, keeping in illegal detention more than 180 Ukrainian citizens from Crimea, <span id="0H7A" class="replacement human tentative"><span class="from_repl">–</span> <span class="to_repl"></span></span> including 116 Crimean Tatars, among others the First Deputy Chairman of the Mejlis of the Crimean Tatar People, Nariman Dzhelyal, who are being prosecuted on trumped-up and politically motivated charges.</td><td>Moreover, for more than six years, the aggressor state has been shamelessly ignoring the decision of the UN International Court of Justice on the immediate restoration of rights of the Mejlis of the Crimean Tatar People. Despite the decision mentioned, Russian occupants continue to prohibit the entry of the leaders of the Crimean Tatar People, Mustafa Dzhemilev and Refat Chubarov to the occupied peninsula, keeping in illegal detention more than 180 Ukrainian citizens from Crimea, –including 116 Crimean Tatars, among others the First Deputy Chairman of the Mejlis of the Crimean Tatar People, Nariman Dzhelyal, who are being prosecuted on trumped-up and politically motivated charges.</td></tr><tr class="table-dark text-dark"><td>In this regard, we reiterate that all “statements” shared by the aggressor state allegedly on behalf of Crimean Tatars are null and void, they do not reflect the real situation of indigenous Crimean Tatar people under Russia’s temporarily occupation of Crimea and they will be used against Russia in future international trials as evidence of deliberate attempts to conceal the truth about Russia’s crimes and repressions. </td><td>In this regard, we reiterate that all “statements” shared by the aggressor <span id="9BJT" class="replacement human tentative"><span class="from_repl">state</span> <span class="to_repl">State</span></span> allegedly on behalf of Crimean Tatars are null and void, <span id="A1D3" class="replacement human tentative"><span class="from_repl">they</span> <span class="to_repl"></span></span> do not reflect the real situation of indigenous Crimean Tatar people under Russia's <span id="BTHK" class="replacement human tentative"><span class="from_repl">temporarily</span> <span class="to_repl">temporary</span></span> occupation of Crimea and <span id="RNOX" class="replacement human tentative"><span class="from_repl">they</span> <span class="to_repl"></span></span> will be used against Russia in future international trials as evidence of deliberate attempts to conceal the truth about Russia's crimes and repressions.</td><td>In this regard, we reiterate that all “statements” shared by the aggressor state allegedly on behalf of Crimean Tatars are null and void, they do not reflect the real situation of indigenous Crimean Tatar people under Russia's temporarily occupation of Crimea and they will be used against Russia in future international trials as evidence of deliberate attempts to conceal the truth about Russia's crimes and repressions.</td></tr><tr class="table-light"><td> PAGE  \* MERGEFORMAT 1 PAGE  \* MERGEFORMAT 1</td><td>PAGE \*MERGEFORMAT 1 PAGE \*MERGEFORMAT 1</td><td>PAGE \*MERGEFORMAT 1 PAGE \*MERGEFORMAT 1</td></tr><tr class="table-dark text-dark"><td> PAGE  \* MERGEFORMAT 1</td><td>PAGE \*MERGEFORMAT 1</td><td>PAGE \*MERGEFORMAT 1</td></tr><tr class="table-light"><td> PAGE  \* MERGEFORMAT 1</td><td>PAGE \*MERGEFORMAT 1</td><td>PAGE \*MERGEFORMAT 1</td></tr><tr class="table-dark text-dark"><td> PAGE  \* MERGEFORMAT 9</td><td>PAGE \*MERGEFORMAT 9</td><td>PAGE \*MERGEFORMAT 9</td></tr><tr class="table-light"><td> PAGE  \* MERGEFORMAT 2</td><td>PAGE \*MERGEFORMAT 2</td><td>PAGE \*MERGEFORMAT 2</td></tr><tr class="table-dark text-dark"><td>United Nations</td><td>United Nations</td><td>United Nations</td></tr><tr class="table-light"><td>                             A/77/851</td><td>A/77/851</td><td>A/77/851</td></tr><tr class="table-dark text-dark"><td> </td><td></td><td></td></tr><tr class="table-light"><td>General Assembly</td><td>General Assembly</td><td>General Assembly</td></tr><tr class="table-dark text-dark"><td>Distr.: General</td><td>Distr.: General</td><td>Distr.: General</td></tr><tr class="table-light"><td>13 April 2023</td><td>13 April 2023</td><td>13 April 2023</td></tr><tr class="table-dark text-dark"><td>Original: English </td><td>Original: English</td><td>Original: English</td></tr></tbody>
+  </table>
+</div>
+
+</body>
+</html>
+

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+  
+}  
+
+function accept_repl(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+    <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div>
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+
+
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead>
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body"><tr class="table-light"><td> DOCVARIABLE "sss1" \* MERGEFORMAT CLCS/55/1</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT CLCS/55/1</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT CLCS/55/1</td></tr><tr class="table-dark text-dark"><td>Fifty-eighth session</td><td>Fifty-eighth session</td><td>Fifty-eighth session</td></tr><tr class="table-light"><td>New York, 5 July – 22 August 2023</td><td>New York, 5 <span id="6WTB" class="replacement human tentative"><span class="from_repl">July – 22</span> <span class="to_repl">July–22</span></span> August 2023</td><td>New York, 5 July – 22 August 2023</td></tr><tr class="table-dark text-dark"><td>		Provisional agenda</td><td>Provisional agenda</td><td>Provisional agenda</td></tr><tr class="table-light"><td>1.	Opening of the fifty-eighth session.</td><td>1. Opening of the fifty-eighth session.</td><td>1. Opening of the fifty-eighth session.</td></tr><tr class="table-dark text-dark"><td>2.	Solemn declaration by the members of the Commission.</td><td>2. Solemn declaration by the members of the Commission.</td><td>2. Solemn declaration by the members of the Commission.</td></tr><tr class="table-light"><td>3.	Election of the Chair of the Commission.</td><td>3. Election of the Chair of the Commission.</td><td>3. Election of the Chair of the Commission.</td></tr><tr class="table-dark text-dark"><td>4.	Adoption of the agenda.</td><td>4. Adoption of the agenda.</td><td>4. Adoption of the agenda.</td></tr><tr class="table-light"><td>5.	Election of the Vice-Chairs.</td><td>5. Election of the Vice-Chairs.</td><td>5. Election of the Vice-Chairs.</td></tr><tr class="table-dark text-dark"><td>6.	Appointment of the members of subcommissions and other subsidiary bodies.</td><td>6. Appointment of the members of subcommissions and other subsidiary bodies.</td><td>6. Appointment of the members of subcommissions and other subsidiary bodies.</td></tr><tr class="table-light"><td>7.	Organization of work.</td><td>7. Organization of work.</td><td>7. Organization of work.</td></tr><tr class="table-dark text-dark"><td>8.	Workload of the Commission and working conditions of its members.</td><td>8. Workload of the Commission and working conditions of its members.</td><td>8. Workload of the Commission and working conditions of its members.</td></tr><tr class="table-light"><td>9.	Consideration of the partial revised submission made by Brazil in respect of the Brazilian Equatorial Margin.</td><td>9. Consideration of the partial revised submission made by Brazil in respect of the Brazilian Equatorial Margin.</td><td>9. Consideration of the partial revised submission made by Brazil in respect of the Brazilian Equatorial Margin.</td></tr><tr class="table-dark text-dark"><td>10.	Presentation and consideration of the revised submission made by the Cook Islands concerning the Manihiki Plateau;</td><td>10. Presentation and consideration of the revised submission made by the Cook Islands concerning the Manihiki Plateau <span id="SGHP" class="replacement human tentative"><span class="from_repl">;</span> <span class="to_repl">.</span></span></td><td>10. Presentation and consideration of the revised submission made by the Cook Islands concerning the Manihiki Plateau;</td></tr><tr class="table-light"><td>11.	Consideration of the partial submission made by Mauritius in respect of the region of Rodrigues Island.</td><td>11. Consideration of the partial submission made by Mauritius in respect of the region of Rodrigues Island.</td><td>11. Consideration of the partial submission made by Mauritius in respect of the region of Rodrigues Island.</td></tr><tr class="table-dark text-dark"><td>12.	Consideration of the submission made by Nigeria.</td><td>12. Consideration of the submission made by Nigeria.</td><td>12. Consideration of the submission made by Nigeria.</td></tr><tr class="table-light"><td>13.	Consideration of the partial amended submission made by Palau in respect of the North Area.</td><td>13. Consideration of the partial amended submission made by Palau in respect of the North Area.</td><td>13. Consideration of the partial amended submission made by Palau in respect of the North Area.</td></tr><tr class="table-dark text-dark"><td>14.	Consideration of the submission made by Portugal.</td><td>14. Consideration of the submission made by Portugal.</td><td>14. Consideration of the submission made by Portugal.</td></tr><tr class="table-light"><td>15.	Consideration of the partial submission made by Spain in respect of the area of Galicia.</td><td>15. Consideration of the partial submission made by Spain in respect of the area of Galicia.</td><td>15. Consideration of the partial submission made by Spain in respect of the area of Galicia.</td></tr><tr class="table-dark text-dark"><td>16.	Consideration of the submission made by Trinidad and Tobago.</td><td>16. Consideration of the submission made by Trinidad and Tobago.</td><td>16. Consideration of the submission made by Trinidad and Tobago.</td></tr><tr class="table-light"><td>17.	Consideration of the submission made by Namibia.</td><td>17. Consideration of the submission made by Namibia.</td><td>17. Consideration of the submission made by Namibia.</td></tr><tr class="table-dark text-dark"><td>18.	Consideration of other submissions made pursuant to article 76, paragraph 8, of the Convention: </td><td>18. Consideration of other submissions made pursuant to article 76, paragraph 8, of the Convention:</td><td>18. Consideration of other submissions made pursuant to article 76, paragraph 8, of the Convention:</td></tr><tr class="table-light"><td>(a)	Russian Federation: partial revised Submission in respect of the southeastern part of the Eurasian Basin in the Arctic Ocean;</td><td>(a) Russian Federation: partial revised <span id="TJJT" class="replacement human tentative"><span class="from_repl">Submission</span> <span class="to_repl">submission</span></span> in respect of the <span id="RODN" class="replacement human tentative"><span class="from_repl">southeastern</span> <span class="to_repl">south-eastern</span></span> part of the Eurasian <span id="XTT4" class="replacement human tentative"><span class="from_repl">Basin</span> <span class="to_repl">basin</span></span> in the Arctic Ocean;</td><td>(a) Russian Federation: partial revised Submission in respect of the southeastern part of the Eurasian Basin in the Arctic Ocean;</td></tr><tr class="table-dark text-dark"><td>(b) 	Brazil: partial revised submission in respect of the Brazilian Oriental and Meridional Margin; </td><td>(b) Brazil: partial revised submission in respect of the Brazilian <span id="0YBL" class="replacement human tentative"><span class="from_repl">Oriental</span> <span class="to_repl">oriental</span></span> and <span id="YF6F" class="replacement human tentative"><span class="from_repl">Meridional Margin</span> <span class="to_repl">meridional margin</span></span> ;</td><td>(b) Brazil: partial revised submission in respect of the Brazilian Oriental and Meridional Margin;</td></tr><tr class="table-light"><td>(c)	Iceland: partial revised Submission in respect of the western, southern and south-eastern parts of the Reykjanes Ridge;</td><td>(c) Iceland: partial revised <span id="5H44" class="replacement human tentative"><span class="from_repl">Submission</span> <span class="to_repl">submission</span></span> in respect of the western, southern and south-eastern parts of the Reykjanes Ridge;</td><td>(c) Iceland: partial revised Submission in respect of the western, southern and south-eastern parts of the Reykjanes Ridge;</td></tr><tr class="table-dark text-dark"><td>(d)	Canada: in respect of the Arctic Ocean;</td><td>(d) Canada: in respect of the Arctic Ocean;</td><td>(d) Canada: in respect of the Arctic Ocean;</td></tr><tr class="table-light"><td>(e)	Mauritius: concerning the Northern Chagos Archipelago region;</td><td>(e) Mauritius: concerning the <span id="M5F4" class="replacement human tentative"><span class="from_repl">Northern</span> <span class="to_repl">northern</span></span> Chagos Archipelago region;</td><td>(e) Mauritius: concerning the Northern Chagos Archipelago region;</td></tr><tr class="table-dark text-dark"><td>(f)	Federated States of Micronesia: in respect of the Area North of Yap; and </td><td>(f) Federated States of Micronesia: in respect of the <span id="NPEV" class="replacement human tentative"><span class="from_repl">Area North</span> <span class="to_repl">area north</span></span> of Yap; <span id="JY2V" class="replacement human tentative"><span class="from_repl">and</span> <span class="to_repl"></span></span></td><td>(f) Federated States of Micronesia: in respect of the Area North of Yap; and</td></tr><tr class="table-light"><td>(g)	Indonesia: in respect of the Area of South of Java and South of Nusa Tenggara.</td><td>(g) Indonesia: in respect of the <span id="A87X" class="replacement human tentative"><span class="from_repl">Area</span> <span class="to_repl">area</span></span> of <span id="NU5Q" class="replacement human tentative"><span class="from_repl">South</span> <span class="to_repl">south</span></span> of Java and <span id="2VP7" class="replacement human tentative"><span class="from_repl">South</span> <span class="to_repl">south</span></span> of Nusa Tenggara.</td><td>(g) Indonesia: in respect of the Area of South of Java and South of Nusa Tenggara.</td></tr><tr class="table-dark text-dark"><td>19.	Report on the thirty-third Meeting of States Parties to the United Nations Convention on the Law of the Sea.</td><td>19. Report on the thirty-third Meeting of States Parties to the United Nations Convention on the Law of the Sea.</td><td>19. Report on the thirty-third Meeting of States Parties to the United Nations Convention on the Law of the Sea.</td></tr><tr class="table-light"><td>20.	Report of the Chair of the Committee on Confidentiality.</td><td>20. Report of the Chair of the Committee on Confidentiality.</td><td>20. Report of the Chair of the Committee on Confidentiality.</td></tr><tr class="table-dark text-dark"><td>21.	Report of the Chair of the Scientific and Technical Advice Committee.</td><td>21. Report of the Chair of the Scientific and Technical Advice Committee.</td><td>21. Report of the Chair of the Scientific and Technical Advice Committee.</td></tr><tr class="table-light"><td>22.	Other matters.</td><td>22. Other matters.</td><td>22. Other matters.</td></tr><tr class="table-dark text-dark"><td>United Nations Convention on the Law of the Sea</td><td>United Nations Convention on the Law of the Sea</td><td>United Nations Convention on the Law of the Sea</td></tr><tr class="table-light"><td>CLCS/58/L.1</td><td>CLCS/58/L.1</td><td>CLCS/58/L.1</td></tr><tr class="table-dark text-dark"><td> </td><td></td><td></td></tr><tr class="table-light"><td>Commission on the Limits of the Continental Shelf</td><td>Commission on the Limits of the Continental Shelf</td><td>Commission on the Limits of the Continental Shelf</td></tr><tr class="table-dark text-dark"><td>Distr.: Limited</td><td>Distr.: Limited</td><td>Distr.: Limited</td></tr><tr class="table-light"><td>18 April 2023</td><td>18 April 2023</td><td>18 April 2023</td></tr><tr class="table-dark text-dark"><td>Original: English</td><td>Original: English</td><td>Original: English</td></tr><tr class="table-light"><td> PAGE  \* Arabic  \* MERGEFORMAT 2/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-dark text-dark"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT 22-11645</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-11645</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-11645</td></tr><tr class="table-light"><td> PAGE  \* Arabic  \* MERGEFORMAT 3/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-dark text-dark"><td> DOCVARIABLE "sss1" \* MERGEFORMAT CLCS/58/L.1</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT CLCS/58/L.1</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT CLCS/58/L.1</td></tr></tbody>
+  </table>
+</div>
+
+</body>
+</html>
+
