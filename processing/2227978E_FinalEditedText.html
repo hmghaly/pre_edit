@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+  
+}  
+
+function accept_repl(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+    <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div>
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+
+
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead>
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body"><tr class="table-light"><td>Report of the Security Council Working Group on Children and Armed Conflict</td><td>Report of the Security Council Working Group on Children and Armed Conflict</td><td>Report of the Security Council Working Group on Children and Armed Conflict</td></tr><tr class="table-dark text-dark"><td>	I.	Introduction</td><td>I. Introduction</td><td>I. Introduction</td></tr><tr class="table-light"><td>1.	The present report of the Security Council Working Group on Children and Armed Conflict covers the period from 1 January to 31 December 2022.</td><td>1. The present report of the Security Council Working Group on Children and Armed Conflict covers the period from 1 January to 31 December 2022.</td><td>1. The present report of the Security Council Working Group on Children and Armed Conflict covers the period from 1 January to 31 December 2022.</td></tr><tr class="table-dark text-dark"><td>2.	The Bureau of the Working Group consisted of Mona Juul (Norway) as Chair and a representative of Mexico as Vice-Chair.</td><td>2. The Bureau of the Working Group consisted of Mona Juul (Norway) as Chair and a representative of Mexico as Vice-Chair.</td><td>2. The Bureau of the Working Group consisted of Mona Juul (Norway) as Chair and a representative of <span id="E41J" class="replacement automatic tentative"><span class="from_repl">Mexico</span> <span class="to_repl">México</span></span> as Vice-Chair.</td></tr><tr class="table-light"><td>	II.	Background</td><td>II. Background</td><td>II. Background</td></tr><tr class="table-dark text-dark"><td>3.	On 26 July 2005, the Security Council adopted resolution 1612 (2005) on children and armed conflict. In paragraph 8 of that resolution, the Council decided to establish a working group to review the reports of the monitoring and reporting mechanism on children and armed conflict, to review progress in the development and implementation of the action plans to halt recruitment and use of children in violation of international obligations and to consider other relevant information presented to it. The Council also decided that the working group should:</td><td>3. On 26 July 2005, the Security Council adopted resolution 1612 (2005) on children and armed conflict. In paragraph 8 of that resolution, the Council decided to establish a working group to review the reports of the monitoring and reporting mechanism on children and armed conflict, to review progress in the development and implementation of the action plans to halt recruitment and use of children in violation of international obligations and to consider other relevant information presented to it. The Council also decided that the working group should:</td><td>3. On 26 July 2005, the Security Council adopted resolution 1612 (2005) on children and armed conflict. In paragraph 8 of that resolution, the Council decided to establish a working group to review the reports of the monitoring and reporting mechanism on children and armed conflict, to review progress in the development and implementation of the action plans to halt recruitment and use of children in violation of international obligations and to consider other relevant information presented to it. The Council also decided that the working group should:</td></tr><tr class="table-light"><td>	(a)	Make recommendations to the Council on possible measures to promote the protection of children affected by armed conflict, including through recommendations on appropriate mandates for peacekeeping missions and recommendations with respect to the parties to the conflict;</td><td>(a) Make recommendations to the Council on possible measures to promote the protection of children affected by armed conflict, including through recommendations on appropriate mandates for peacekeeping missions and recommendations with respect to the parties to the conflict;</td><td>(a) Make recommendations to the Council on possible measures to promote the protection of children affected by armed conflict, including through recommendations on appropriate mandates for peacekeeping missions and recommendations with respect to the parties to the conflict;</td></tr><tr class="table-dark text-dark"><td>	(b)	Address requests, as appropriate, to other bodies within the United Nations system for action to support the implementation of the resolution in accordance with their respective mandates.</td><td>(b) Address requests, as appropriate, to other bodies within the United Nations system for action to support the implementation of the resolution in accordance with their respective mandates.</td><td>(b) Address requests, as appropriate, to other bodies within the United Nations system for action to support the implementation of the resolution in accordance with their respective mandates.</td></tr><tr class="table-light"><td>4.	On 2 May 2006, the Working Group adopted its terms of reference, which were subsequently published as a document of the Security Council (S/AC.51/2007/1). On 8 September 2006, the Working Group adopted a list of options for possible actions, which is referred to as the “toolkit” (S/AC.51/2007/2).</td><td>4. On 2 May 2006, the Working Group adopted its terms of reference, which were subsequently published as a document of the Security Council (S/AC.51/2007/1). On 8 September 2006, the Working Group adopted a list of options for possible actions, which is referred to as the “toolkit” (S/AC.51/2007/2).</td><td>4. On 2 May 2006, the Working Group adopted its terms of reference, which were subsequently published as a document of the Security Council (S/AC.51/2007/1). On 8 September 2006, the Working Group adopted a list of options for possible actions, which is referred to as the “ <span id="RQX2" class="replacement automatic tentative"><span class="from_repl">toolkit</span> <span class="to_repl">tool kit</span></span> ” (S/AC.51/2007/2).</td></tr><tr class="table-dark text-dark"><td>5.	Pursuant to resolution 1612 (2005), the Chair of the Working Group has submitted periodic reports to the Security Council on developments in relation to the Working Group since 2006.</td><td>5. Pursuant to resolution 1612 (2005), the Chair of the Working Group has submitted periodic reports to the Security Council on developments in relation to the Working Group since 2006.</td><td>5. Pursuant to resolution 1612 (2005), the Chair of the Working Group has submitted periodic reports to the Security Council on developments in relation to the Working Group since 2006.</td></tr><tr class="table-light"><td>6.	On 9 July 2018, the Security Council unanimously adopted resolution 2427 (2018), which provided a comprehensive framework for mainstreaming protection, rights, well-being and the empowerment of children throughout the conflict cycle and emphasized the importance of the children and armed conflict agenda to conflict prevention and peacekeeping.</td><td>6. On 9 July 2018, the Security Council unanimously adopted resolution 2427 (2018), which provided a comprehensive framework for mainstreaming protection, rights, well-being and the empowerment of children throughout the conflict cycle and emphasized the importance of the children and armed conflict agenda to conflict prevention and peacekeeping.</td><td>6. On 9 July 2018, the Security Council unanimously adopted resolution 2427 (2018), which provided a comprehensive framework for mainstreaming protection, rights, well-being and the empowerment of children throughout the conflict cycle and emphasized the importance of the children and armed conflict agenda to conflict prevention and peacekeeping.</td></tr><tr class="table-dark text-dark"><td>	III.	Summary of the activities of the Working Group</td><td>III. Summary of the activities of the Working Group</td><td>III. Summary of the activities of the Working Group</td></tr><tr class="table-light"><td>7.	During the reporting period, the Working Group held [10] formal meetings, on 1 and 10 February, 1 March, 14 April, 5 May, 18 July, 2 September, 4 and 28 October, and 8 November, and held [11] informal consultations, on 20 May, 1 and 27 June, 28 July, 14 September, 13, 19 and 26 October and 2, 10 and 30 November, in addition to conducting its work through written procedures.</td><td>7. During the reporting period, the Working Group held [10] formal meetings, on 1 and 10 February, 1 March, 14 April, 5 May, 18 July, 2 September, 4 and 28 October, and 8 November, and held [11] informal consultations, on 20 May, 1 and 27 June, 28 July, 14 September, 13, 19 and 26 October and 2, 10 and 30 November, in addition to conducting its work through written procedures.</td><td>7. During the reporting period, the Working Group held [10] formal meetings, on 1 and 10 February, 1 March, 14 April, 5 May, 18 July, 2 September, 4 and 28 October, and 8 November, and held [11] informal consultations, on 20 May, 1 and 27 June, 28 July, 14 September, 13, 19 and 26 October and 2, 10 and 30 November, in addition to conducting its work through written procedures.</td></tr><tr class="table-dark text-dark"><td>8.	At its 95th meeting, held on 1 February, the Working Group discussed the fifth report of the Secretary-General on children and armed conflict in the Central African Republic (S/2021/882), which covers the period from 1 July 2019 to 30 June 2021. The Special Representative of the Secretary-General for Children and Armed Conflict introduced the report, recalling the main conclusions, after which the Chargé d’affaires ad interim of the Central African Republic to the United Nations presented the views of the Government of the Central African Republic on the report.</td><td>8. At its 95th meeting, held on 1 February, the Working Group discussed the fifth report of the Secretary-General on children and armed conflict in the Central African Republic (S/2021/882), which covers the period from 1 July 2019 to 30 June 2021. The Special Representative of the Secretary-General for Children and Armed Conflict introduced the report, recalling the main conclusions, after which the Chargé d’affaires ad interim of the Central African Republic to the United Nations presented the views of the Government of the Central African Republic on the report.</td><td>8. At its 95th meeting, held on 1 February, the Working Group discussed the fifth report of the Secretary-General on children and armed conflict in the Central African Republic (S/2021/882), which covers the period from 1 July 2019 to 30 June 2021. The Special Representative of the Secretary-General for Children and Armed Conflict introduced the report, recalling the main conclusions, after which the Chargé d’affaires ad interim of the Central African Republic to the United Nations presented the views of the Government of the Central African Republic on the report.</td></tr><tr class="table-light"><td>9.	At its 96th meeting, held on 10 February, the Working Group discussed the fifth report of the Secretary-General on children and armed conflict in Colombia (S/2021/1022), which covers the period from 1 July 2019 to 30 June 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Deputy Permanent Representative of Colombia to the United Nations presented the views of the Government of Colombia on the report.</td><td>9. At its 96th meeting, held on 10 February, the Working Group discussed the fifth report of the Secretary-General on children and armed conflict in Colombia (S/2021/1022), which covers the period from 1 July 2019 to 30 June 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Deputy Permanent Representative of Colombia to the United Nations presented the views of the Government of Colombia on the report.</td><td>9. At its 96th meeting, held on 10 February, the Working Group discussed the fifth report of the Secretary-General on children and armed conflict in Colombia (S/2021/1022), which covers the period from 1 July 2019 to 30 June 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Deputy Permanent Representative of Colombia to the United Nations presented the views of the Government of Colombia on the report.</td></tr><tr class="table-dark text-dark"><td>10.	At its 97th meeting, held on 1 March, the Working Group discussed the fourth report of the Secretary-General on children and armed conflict in Iraq (S/2022/46), which covers the period from 1 August 2019 to 30 June 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of Iraq to the United Nations presented the views of the Government of Iraq on the report. </td><td>10. At its 97th meeting, held on 1 March, the Working Group discussed the fourth report of the Secretary-General on children and armed conflict in Iraq (S/2022/46), which covers the period from 1 August 2019 to 30 June 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of Iraq to the United Nations presented the views of the Government of Iraq on the report.</td><td>10. At its 97th meeting, held on 1 March, the Working Group discussed the fourth report of the Secretary-General on children and armed conflict in Iraq (S/2022/46), which covers the period from 1 August 2019 to 30 June 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of Iraq to the United Nations presented the views of the Government of Iraq on the report.</td></tr><tr class="table-light"><td>11.	At its 98th meeting, held on 14 April, a representative of UNICEF presented the global horizontal note by the Secretary-General covering the period from October to December 2021.</td><td>11. At its 98th meeting, held on 14 April, a representative of UNICEF presented the global horizontal note by the Secretary-General covering the period from October to December 2021.</td><td>11. At its 98th meeting, held on 14 April, a representative of UNICEF presented the global horizontal note by the Secretary-General covering the period from October to December 2021.</td></tr><tr class="table-dark text-dark"><td>12.	At its 99th meeting, held on 5 May, the Working Group engaged in an exchange of views with the Permanent Representative of Yemen to the United Nations following the adoption on 25 April, by means of written procedure, of the conclusions on children and armed conflict in Yemen (S/AC.51/2022/1).</td><td>12. At its 99th meeting, held on 5 May, the Working Group engaged in an exchange of views with the Permanent Representative of Yemen to the United Nations following the adoption on 25 April, by means of written procedure, of the conclusions on children and armed conflict in Yemen (S/AC.51/2022/1).</td><td>12. At its 99th meeting, held on 5 May, the Working Group engaged in an exchange of views with the Permanent Representative of Yemen to the United Nations following the adoption on 25 April, by means of written procedure, of the conclusions on children and armed conflict in Yemen (S/AC.51/2022/1).</td></tr><tr class="table-light"><td>13.	At its 100th meeting, held on 18 July, the Working Group adopted conclusions on children and armed conflict in Colombia ( HYPERLINK "https://undocs.org/en/S/AC.51/2022/2" S/AC.51/2022/2). At the same meeting, the Working Group examined the sixth report of the Secretary-General on children and armed conflict in Somalia (S/2022/397), which covers the period from 1 October 2019 to 30 September 2021 and was introduced by the Special Representative of the Secretary-General. The Permanent Representative of Somalia to the United Nations also addressed the Working Group.</td><td>13. At its 100th meeting, held on 18 July, the Working Group adopted conclusions on children and armed conflict in Colombia <span id="DB4P" class="replacement human tentative"><span class="from_repl">(</span> <span class="to_repl">(</span></span> HYPERLINK "https://undocs.org/en/S/AC.51/2022/2 <span id="1AQZ" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">"</span></span> S/AC.51/2022/2). At the same meeting, the Working Group examined the sixth report of the Secretary-General on children and armed conflict in Somalia (S/2022/397), which covers the period from 1 October 2019 to 30 September 2021 and was introduced by the Special Representative of the Secretary-General. The Permanent Representative of Somalia to the United Nations also addressed the Working Group.</td><td>13. At its 100th meeting, held on 18 July, the Working Group adopted conclusions on children and armed conflict in Colombia ( HYPERLINK "https://undocs.org/en/S/AC.51/2022/2 S/AC.51/2022/2). At the same meeting, the Working Group examined the sixth report of the Secretary-General on children and armed conflict in Somalia (S/2022/397), which covers the period from 1 October 2019 to 30 September 2021 and was introduced by the Special Representative of the Secretary-General. The Permanent Representative of Somalia to the United Nations also addressed the Working Group.</td></tr><tr class="table-dark text-dark"><td>14.	At its 101st meeting, held on 2 September, the Working Group adopted the conclusions on children and armed conflict in Iraq (S/AC.51/2022/3).</td><td>14. At its 101st meeting, held on 2 September, the Working Group adopted the conclusions on children and armed conflict in Iraq (S/AC.51/2022/3).</td><td>14. At its 101st meeting, held on 2 September, the Working Group adopted the conclusions on children and armed conflict in Iraq (S/AC.51/2022/3).</td></tr><tr class="table-light"><td>15.	At its 102nd meeting, held on 4 October, the Working Group discussed the sixth report of the Secretary-General on children and armed conflict in the Philippines (S/2022/569), which covers the period from 1 January 2020 to 31 December 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of the Philippines to the United Nations presented the views of the Government of the Philippines on the report. At the same meeting, the Working Group examined the third report of the Secretary-General on children and armed conflict in Nigeria (S/2022/596), which covers the period from 1 January 2020 to 31 December 2021 and was introduced by the Special Representative of the Secretary-General. A representative of Nigeria also addressed the Working Group.</td><td>15. At its 102nd meeting, held on 4 October, the Working Group discussed the sixth report of the Secretary-General on children and armed conflict in the Philippines (S/2022/569), which covers the period from 1 January 2020 to 31 December 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of the Philippines to the United Nations presented the views of the Government of the Philippines on the report. At the same meeting, the Working Group examined the third report of the Secretary-General on children and armed conflict in Nigeria (S/2022/596), which covers the period from 1 January 2020 to 31 December 2021 and was introduced by the Special Representative of the Secretary-General. A representative of Nigeria also addressed the Working Group.</td><td>15. At its 102nd meeting, held on 4 October, the Working Group discussed the sixth report of the Secretary-General on children and armed conflict in the Philippines (S/2022/569), which covers the period from 1 January 2020 to 31 December 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of the Philippines to the United Nations presented the views of the Government of the Philippines on the report. At the same meeting, the Working Group examined the third report of the Secretary-General on children and armed conflict in Nigeria (S/2022/596), which covers the period from 1 January 2020 to 31 December 2021 and was introduced by the Special Representative of the Secretary-General. A representative of Nigeria also addressed the Working Group.</td></tr><tr class="table-dark text-dark"><td>16.	At its 103rd meeting, held on 28 October, the Working Group discussed the seventh report of the Secretary-General on children and armed conflict in the Sudan (S/2022/627), which covers the period from 1 January 2020 to 31 December 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of the Sudan to the United Nations presented the views of the Government of the Sudan on the report.</td><td>16. At its 103rd meeting, held on 28 October, the Working Group discussed the seventh report of the Secretary-General on children and armed conflict in the Sudan (S/2022/627), which covers the period from 1 January 2020 to 31 December 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of the Sudan to the United Nations presented the views of the Government of the Sudan on the report.</td><td>16. At its 103rd meeting, held on 28 October, the Working Group discussed the seventh report of the Secretary-General on children and armed conflict in the Sudan (S/2022/627), which covers the period from 1 January 2020 to 31 December 2021. The Special Representative of the Secretary-General introduced the report, recalling the main conclusions, after which the Permanent Representative of the Sudan to the United Nations presented the views of the Government of the Sudan on the report.</td></tr><tr class="table-light"><td>17.	At its 104th meeting, held on 8 November, a representative of UNICEF presented the global horizontal note by the Secretary-General covering the period from April to June 2022. At the same meeting, the Working Group examined the eighth report of the Secretary-General on children and armed conflict in the Democratic Republic of the Congo (S/2022/745), which covers the period from 1 April 2020 to 31 March 2022 and was introduced by the Special Representative of the Secretary-General. The Permanent Representative of the Democratic Republic of the Congo to the United Nations also addressed the Working Group.</td><td>17. At its 104th meeting, held on 8 November, a representative of UNICEF presented the global horizontal note by the Secretary-General covering the period from April to June 2022. At the same meeting, the Working Group examined the eighth report of the Secretary-General on children and armed conflict in the Democratic Republic of the Congo (S/2022/745), which covers the period from 1 April 2020 to 31 March 2022 and was introduced by the Special Representative of the Secretary-General. The Permanent Representative of the Democratic Republic of the Congo to the United Nations also addressed the Working Group.</td><td>17. At its 104th meeting, held on 8 November, a representative of UNICEF presented the global horizontal note by the Secretary-General covering the period from April to June 2022. At the same meeting, the Working Group examined the eighth report of the Secretary-General on children and armed conflict in the Democratic Republic of the Congo (S/2022/745), which covers the period from 1 April 2020 to 31 March 2022 and was introduced by the Special Representative of the Secretary-General. The Permanent Representative of the Democratic Republic of the Congo to the United Nations also addressed the Working Group.</td></tr><tr class="table-dark text-dark"><td>18. 	</td><td>18. <span id="I86B" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">At its 105th meeting, held on 19 December, the Working Group adopted conclusions on children and armed conflict in the Philippines ( HYPERLINK "https://undocs.org/en/S/AC.51/2022/4 S/AC.51/2022/4), the Central African Republic ( HYPERLINK "https://undocs.org/en/S/AC.51/2022/5 S/AC.51/2022/5), the Sudan ( HYPERLINK "https://undocs.org/en/S/AC.51/2022/6 S/AC.51/2022/6) and the Democratic Republic of the Congo ( HYPERLINK "https://undocs.org/en/S/AC.51/2022/7 S/AC.51/2022/7).</span></span></td><td>18.</td></tr><tr class="table-light"><td>Pursuant to the adoption of the aforementioned conclusions, the Working Group released [three] public statements as Security Council press releases, containing messages in relation to Yemen () (on 5 May), Colombia () (on 20 July) and Iraq () (on 2 September). </td><td><span id="AT7N" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">19.</span></span> Pursuant to the adoption of the aforementioned conclusions, the Working Group released <span id="HPBH" class="replacement human tentative"><span class="from_repl">[</span> <span class="to_repl"></span></span> three <span id="PRII" class="replacement human tentative"><span class="from_repl">]</span> <span class="to_repl"></span></span> public statements as Security Council press releases, containing messages in relation to Yemen <span id="HQKA" class="replacement human tentative"><span class="from_repl">()(</span> <span class="to_repl">( HYPERLINK "https://press.un.org/en/2022/sc14881.doc.htm SC/14881)</span></span> on 5 May <span id="4UXG" class="replacement human tentative"><span class="from_repl">)</span> <span class="to_repl"></span></span> , Colombia <span id="94EL" class="replacement human tentative"><span class="from_repl">()(</span> <span class="to_repl">( HYPERLINK "https://press.un.org/en/2022/sc14977.doc.htm SC/14977)</span></span> on 20 July <span id="ZZ7P" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">, Iraq ( HYPERLINK "https://press.un.org/en/2022/sc15017.doc.htm SC/15017</span></span> ) <span id="3YKV" class="replacement human tentative"><span class="from_repl">and Iraq ()(</span> <span class="to_repl"></span></span> on 2 September <span id="54SV" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">, and the Philippines ( HYPERLINK "https://press.un.org/en/2022/sc15148.doc.htm SC/15148</span></span> ) <span id="BI2O" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">, the Central African Republic ( HYPERLINK "https://press.un.org/en/2022/sc15149.doc.htm SC/15149), the Sudan ( HYPERLINK "https://press.un.org/en/2022/sc15150.doc.htm SC/15150) and the Democratic Republic of the Congo ( HYPERLINK "https://press.un.org/en/2022/sc15151.doc.htm SC/15151) on 19 December</span></span> .</td><td>Pursuant to the adoption of the aforementioned conclusions, the Working Group released [three] public statements as Security Council press releases, containing messages in relation to Yemen ()(on 5 May), Colombia ()(on 20 July) and Iraq ()(on 2 September).</td></tr><tr class="table-dark text-dark"><td>19. 	In 2022, in direct relation to the conclusions that it had adopted, the Working Group sent [x] communications to [x] Member States and other stakeholders. </td><td><span id="GTZY" class="replacement human tentative"><span class="from_repl">19</span> <span class="to_repl">20</span></span> . In 2022, in direct relation to the conclusions that it had adopted, the Working Group sent <span id="NPS2" class="replacement human tentative"><span class="from_repl">[x]</span> <span class="to_repl">10</span></span> communications to <span id="SORB" class="replacement human tentative"><span class="from_repl">[x]</span> <span class="to_repl">12</span></span> Member States and other stakeholders.</td><td>19. In 2022, in direct relation to the conclusions that it had adopted, the Working Group sent [x] communications to [x] Member States and other stakeholders.</td></tr><tr class="table-light"><td>	IV.	Secretariat administrative and substantive support</td><td>IV. Secretariat administrative and substantive support</td><td>IV. Secretariat administrative and substantive support</td></tr><tr class="table-dark text-dark"><td>20.	The Security Council Affairs Division provided substantive and procedural support to the Chair and the members of the Working Group. Induction briefings were also provided to incoming members of the Council to familiarize them with the specific issues relevant to the Working Group.</td><td><span id="BZ9V" class="replacement human tentative"><span class="from_repl">20</span> <span class="to_repl">21</span></span> . The Security Council Affairs Division provided substantive and procedural support to the Chair and the members of the Working Group. Induction briefings were also provided to incoming members of the Council to familiarize them with the specific issues relevant to the Working Group.</td><td>20. The Security Council Affairs Division provided substantive and procedural support to the Chair and the members of the Working Group. Induction briefings were also provided to incoming members of the Council to familiarize them with the specific issues relevant to the Working Group.</td></tr><tr class="table-light"><td>21.	The Division worked with the Department for General Assembly and Conference Management and the Office of Information and Communications Technology of the Department of Management Strategy, Policy and Compliance to facilitate the conduct of in-person meetings in line with relevant coronavirus disease (COVID-19) guidance and restrictions and continued to make virtual meetings available as an alternative option.</td><td><span id="OGS9" class="replacement human tentative"><span class="from_repl">21</span> <span class="to_repl">22</span></span> . The Division worked with the Department for General Assembly and Conference Management and the Office of Information and Communications Technology of the Department of Management Strategy, Policy and Compliance to facilitate the conduct of in-person meetings in line with relevant coronavirus disease (COVID-19) guidance and restrictions and continued to make virtual meetings available as an alternative option.</td><td>21. The Division worked with the Department for General Assembly and Conference Management and the Office of Information and Communications Technology of the Department of Management Strategy, Policy and Compliance to facilitate the conduct of in-person meetings in line with relevant coronavirus disease (COVID-19) guidance and restrictions and continued to make virtual meetings available as an alternative option.</td></tr><tr class="table-dark text-dark"><td></td><td><span id="1T4I" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">United Nations</span></span></td><td></td></tr><tr class="table-light"><td></td><td><span id="S8UQ" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">S/2022/1018</span></span></td><td></td></tr><tr class="table-dark text-dark"><td></td><td></td><td></td></tr><tr class="table-light"><td></td><td><span id="JT8A" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Security Council</span></span></td><td></td></tr><tr class="table-dark text-dark"><td></td><td><span id="2350" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Distr.: General</span></span></td><td></td></tr><tr class="table-light"><td></td><td><span id="3SUP" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">30 December 2022</span></span></td><td></td></tr><tr class="table-dark text-dark"><td></td><td><span id="C5UH" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Original: English</span></span></td><td></td></tr><tr class="table-light"><td> PAGE  \* Arabic  \* MERGEFORMAT 2/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-dark text-dark"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT 22-27978</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-27978</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-27978</td></tr><tr class="table-light"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT 22-27978</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-27978</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-27978</td></tr><tr class="table-dark text-dark"><td> PAGE  \* Arabic  \* MERGEFORMAT 3/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr></tbody>
+  </table>
+</div>
+
+</body>
+</html>
+

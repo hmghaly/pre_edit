@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+  
+}  
+
+function accept_repl(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+    <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div>
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+
+
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead>
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body"><tr class="table-light"><td>General Assembly</td><td>General Assembly</td><td><span id="E41J" class="replacement automatic tentative"><span class="from_repl">General Assembly</span> <span class="to_repl">eneral Assemblya</span></span></td></tr><tr class="table-dark text-dark"><td>Tenth emergency special session</td><td>Tenth emergency special session</td><td>Tenth emergency special session <span id="RQX2" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">.</span></span></td></tr><tr class="table-light"><td>Agenda item 5</td><td>Agenda item 5</td><td><span id="DB4P" class="replacement automatic tentative"><span class="from_repl">Agenda item</span> <span class="to_repl">Item</span></span> 5</td></tr><tr class="table-dark text-dark"><td>Illegal Israeli actions in Occupied East Jerusalem and the rest of the Occupied Palestinian Territory</td><td>Illegal Israeli actions in Occupied East Jerusalem and the rest of the Occupied Palestinian Territory</td><td>Illegal <span id="1AQZ" class="replacement automatic tentative"><span class="from_repl">Israeli actions</span> <span class="to_repl">Israel action,</span></span> in Occupied <span id="I86B" class="replacement automatic tentative"><span class="from_repl">East</span> <span class="to_repl">Eastern</span></span> Jerusalem and the rest of the Occupied Palestinian Territory</td></tr><tr class="table-light"><td>Security Council</td><td>Security Council</td><td><span id="AT7N" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">peace and security Council to the Secretary-General and the representatives of the members of the</span></span> Security Council</td></tr><tr class="table-dark text-dark"><td>Seventy-eighth year</td><td>Seventy-eighth year</td><td>Seventy <span id="HPBH" class="replacement automatic tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> eighth year</td></tr><tr class="table-light"><td>	</td><td></td><td></td></tr><tr class="table-dark text-dark"><td>		</td><td></td><td></td></tr><tr class="table-light"><td>		Identical letters dated 7 April 2023 from the Permanent Observer of the State of Palestine to the United Nations addressed to the Secretary-General, the President of the General Assembly and the President of the Security Council</td><td>Identical letters dated 7 April 2023 from the Permanent Observer of the State of Palestine to the United Nations addressed to the Secretary-General, the President of the General Assembly and the President of the Security Council</td><td>Identical letters dated 7 April 2023 from the <span id="PRII" class="replacement automatic tentative"><span class="from_repl">Permanent Observer of</span> <span class="to_repl">observer for</span></span> the <span id="HQKA" class="replacement automatic tentative"><span class="from_repl">State</span> <span class="to_repl">Statef</span></span> of Palestine to <span id="4UXG" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">the Charter of</span></span> the United Nations addressed to the <span id="94EL" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">report of the</span></span> Secretary <span id="ZZ7P" class="replacement automatic tentative"><span class="from_repl">-General</span> <span class="to_repl">- eneral</span></span> , the <span id="3YKV" class="replacement automatic tentative"><span class="from_repl">President</span> <span class="to_repl">Mr.</span></span> of the <span id="54SV" class="replacement automatic tentative"><span class="from_repl">General</span> <span class="to_repl"></span></span> Assembly and the <span id="BI2O" class="replacement automatic tentative"><span class="from_repl">President</span> <span class="to_repl">Mr.</span></span> of the <span id="GTZY" class="replacement automatic tentative"><span class="from_repl">Security</span> <span class="to_repl"></span></span> Council</td></tr><tr class="table-dark text-dark"><td>Ref.	SGC.86/23									7 April 2023</td><td><span id="SORB" class="replacement human tentative"><span class="from_repl">Ref. SGC.86/23 7 April 2023</span> <span class="to_repl"></span></span></td><td><span id="NPS2" class="replacement automatic tentative"><span class="from_repl">Ref</span> <span class="to_repl">especially women and children, ref</span></span> . SGC.86/23 7 April 2023</td></tr><tr class="table-light"><td>Excellency,</td><td><span id="BZ9V" class="replacement human tentative"><span class="from_repl">Excellency,</span> <span class="to_repl"></span></span></td><td>Excellency,</td></tr><tr class="table-dark text-dark"><td>	While the Security Council remains silent and the world looks on, Israel remains undeterred, carrying on with its daily barbarity and criminality against the Palestinian people, escalating its violence, punishment and threats against them under every possible illegal and racist pretext.</td><td>While the Security Council remains silent and the world looks on, Israel remains undeterred, carrying on with its daily barbarity and criminality against the Palestinian people, escalating its violence, punishment and threats against them under every possible illegal and racist pretext.</td><td><span id="OGS9" class="replacement automatic tentative"><span class="from_repl">While</span> <span class="to_repl">When</span></span> the <span id="1T4I" class="replacement automatic tentative"><span class="from_repl">Security</span> <span class="to_repl"></span></span> Council remains <span id="S8UQ" class="replacement automatic tentative"><span class="from_repl">silent</span> <span class="to_repl">silence</span></span> and the world looks on, <span id="JT8A" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> remains undeterred, carrying on with its <span id="2350" class="replacement automatic tentative"><span class="from_repl">daily</span> <span class="to_repl">day</span></span> barbarity and criminality against the Palestinian people, escalating its <span id="3SUP" class="replacement automatic tentative"><span class="from_repl">violence</span> <span class="to_repl">violent</span></span> , punishment and threats against them <span id="C5UH" class="replacement automatic tentative"><span class="from_repl">under</span> <span class="to_repl">in connection with</span></span> every possible illegal and racist pretext.</td></tr><tr class="table-light"><td>	Since my last letter, on 5 April, Israeli occupying forces (IOF) have perpetrated numerous more raids on Al-Aqsa Mosque/Al-Haram Al-Sharif and assaults on Palestinian worshippers and a series of military airstrikes on the Gaza Strip, terrorizing our people and threatening even more loss of life and destruction. Yet again the holy month of Ramadan and Easter celebrations are being marred for Palestinian worshippers and the Muslim and Christian faithful around the world by deliberate decisions of Israel, the occupying Power, to violate the sanctity of holy sites and to use force against civilians who are simply exercising their rights to religion and worship.</td><td>Since my last letter, on 5 April, Israeli occupying forces <span id="DXKR" class="replacement human tentative"><span class="from_repl">(IOF)</span> <span class="to_repl"></span></span> have perpetrated numerous more raids on <span id="L56A" class="replacement human tentative"><span class="from_repl">Al-</span> <span class="to_repl">the</span></span> Aqsa Mosque/ <span id="HL92" class="replacement human tentative"><span class="from_repl">Al-</span> <span class="to_repl"></span></span> Haram <span id="MHY4" class="replacement human tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> -Sharif <span id="7M5Y" class="replacement human tentative"><span class="from_repl">and</span> <span class="to_repl">,</span></span> assaults on Palestinian worshippers and a series of military <span id="R9I0" class="replacement human tentative"><span class="from_repl">airstrikes</span> <span class="to_repl">air strikes</span></span> on the Gaza Strip, terrorizing our people and threatening even more loss of life and destruction. Yet again <span id="DG6H" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> the holy month of Ramadan and Easter celebrations are being marred for Palestinian worshippers and the Muslim and Christian faithful around the world by <span id="1V4N" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">the</span></span> deliberate decisions of Israel, the occupying Power, to violate the sanctity of holy sites and to use force against civilians who are simply exercising their rights to religion and worship.</td><td><span id="SRMM" class="replacement automatic tentative"><span class="from_repl">Since</span> <span class="to_repl">Given that</span></span> my <span id="TWWQ" class="replacement automatic tentative"><span class="from_repl">last</span> <span class="to_repl">past</span></span> letter, on 5 April <span id="BIGV" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">2021</span></span> , <span id="4223" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">Israel occupying forces (</span></span> Israeli occupying forces <span id="J4YC" class="replacement automatic tentative"><span class="from_repl">(IOF</span> <span class="to_repl"></span></span> ) have perpetrated numerous more raids on <span id="AA1I" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="DWMC" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Aqsa Mosque/ <span id="FSGJ" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="ZQLR" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Haram <span id="ANPG" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="D6SH" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Sharif and assaults on Palestinian worshippers and a series of military <span id="V3AA" class="replacement automatic tentative"><span class="from_repl">airstrikes</span> <span class="to_repl">air strikes</span></span> on the Gaza Strip, terrorizing <span id="FZFZ" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> people <span id="YTH9" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and threatening even more loss of <span id="2SIX" class="replacement automatic tentative"><span class="from_repl">life</span> <span class="to_repl">lives</span></span> and <span id="OULW" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">the</span></span> destruction. <span id="CK85" class="replacement automatic tentative"><span class="from_repl">Yet</span> <span class="to_repl">However,</span></span> again the holy month of Ramadan and <span id="L4L7" class="replacement automatic tentative"><span class="from_repl">Easter</span> <span class="to_repl">Eastern</span></span> celebrations are being marred for Palestinian worshippers and the Muslim and Christian faithful <span id="0OJA" class="replacement automatic tentative"><span class="from_repl">around</span> <span class="to_repl">with regard to</span></span> the world by deliberate decisions of <span id="5B38" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> , the occupying Power, to violate the sanctity of holy sites and to <span id="UG59" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> use force against civilians <span id="ZSNM" class="replacement automatic tentative"><span class="from_repl">who</span> <span class="to_repl">whom</span></span> are simply exercising their rights to <span id="HYPG" class="replacement automatic tentative"><span class="from_repl">religion</span> <span class="to_repl">religious</span></span> and worship.</td></tr><tr class="table-dark text-dark"><td>The international community’s warnings and calls for de-escalation and calm are being blatantly ignored by Israel, the occupying Power. It has no interest in de-escalation and no regard for the international community, no less for international law and the rights of the Palestinian people. Its only interest is in seizing every opportunity to exert its dominance over the Palestinian people and its control over their land and holy sites through increasingly violent and vulgar shows of force and the tightening of its arbitrary, unlawful restrictions on Palestinians’ access to Jerusalem, to Al-Aqsa Mosque/Al-Haram Al-Sharif and to churches in the City, along with the closure of other Palestinian cities and areas, including Nablus, Jericho and the Jordan Valley.</td><td>The international community's warnings and calls for de-escalation and calm are being blatantly ignored by Israel, the occupying Power. It has no interest in de-escalation and no regard for the international community, <span id="MTUV" class="replacement human tentative"><span class="from_repl">no</span> <span class="to_repl">much</span></span> less for international law and the rights of the Palestinian people. Its only interest is in seizing every opportunity to exert its dominance over the Palestinian people and its control over their land and holy sites through increasingly violent and vulgar shows of force and the tightening of its arbitrary, unlawful restrictions on Palestinians’ access to Jerusalem, <span id="IAIC" class="replacement human tentative"><span class="from_repl">to Al-</span> <span class="to_repl">the</span></span> Aqsa Mosque/ <span id="TCCW" class="replacement human tentative"><span class="from_repl">Al-</span> <span class="to_repl"></span></span> Haram <span id="K2R5" class="replacement human tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> -Sharif and <span id="FS2C" class="replacement human tentative"><span class="from_repl">to</span> <span class="to_repl"></span></span> churches in the <span id="8G19" class="replacement human tentative"><span class="from_repl">City</span> <span class="to_repl">city</span></span> , along with the closure of other Palestinian cities and areas, including Nablus, Jericho and the Jordan Valley.</td><td>The international <span id="MK5V" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> community's warnings and calls for <span id="85ET" class="replacement automatic tentative"><span class="from_repl">de-</span> <span class="to_repl">del-</span></span> escalation and calm are being blatantly ignored by <span id="DBC5" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> , the occupying Power. It has no interest in <span id="23MW" class="replacement automatic tentative"><span class="from_repl">de-</span> <span class="to_repl">del-</span></span> escalation and no regard for the international <span id="2NUI" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> community, no less for international law <span id="CJ6U" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and the rights of the Palestinian people. Its only interest is in seizing every opportunity to exert its dominance <span id="7QJ2" class="replacement automatic tentative"><span class="from_repl">over</span> <span class="to_repl">more than</span></span> the Palestinian people <span id="3AYD" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and its control <span id="E5BI" class="replacement automatic tentative"><span class="from_repl">over</span> <span class="to_repl">more than</span></span> their land <span id="9PEG" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> and holy sites <span id="I0D6" class="replacement automatic tentative"><span class="from_repl">through</span> <span class="to_repl">by providing</span></span> increasingly violent and vulgar <span id="N86K" class="replacement automatic tentative"><span class="from_repl">shows</span> <span class="to_repl">shown</span></span> of force and the tightening of its <span id="JRDX" class="replacement automatic tentative"><span class="from_repl">arbitrary</span> <span class="to_repl">arbitrarily</span></span> , unlawful restrictions on Palestinians’ access to Jerusalem, to <span id="BA9K" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="VQLC" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Aqsa Mosque/ <span id="688E" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="HW9T" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Haram <span id="YXJT" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="LICK" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Sharif and to churches in the City, <span id="9QXX" class="replacement automatic tentative"><span class="from_repl">along</span> <span class="to_repl">, together</span></span> with the <span id="7OLL" class="replacement automatic tentative"><span class="from_repl">closure</span> <span class="to_repl">close</span></span> of <span id="L46K" class="replacement automatic tentative"><span class="from_repl">other</span> <span class="to_repl">another</span></span> Palestinian cities and areas, including Nablus, Jericho and the Jordan Valley.</td></tr><tr class="table-light"><td>Rather than peaceful celebrations at the convergence of Ramadan, Easter and Passover, we are witness again to Palestinian men, women and children being beaten, chased, humiliated and viciously attacked, terror bombings on Gaza spreading fear and panic, and the very presence of our people in their homeland under violent assault.</td><td>Rather than peaceful celebrations at the convergence of Ramadan, Easter and Passover, we are witness again to Palestinian men, women and children being beaten, chased, humiliated and viciously attacked <span id="JAXP" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl">;</span></span> terror bombings <span id="UCME" class="replacement human tentative"><span class="from_repl">on</span> <span class="to_repl">of</span></span> Gaza spreading fear and panic <span id="EJ3O" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl">;</span></span> and the very presence of our people in their homeland under violent assault.</td><td>Rather <span id="3LDS" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> than <span id="7K6F" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> peaceful celebrations at the convergence of Ramadan, <span id="6BL6" class="replacement automatic tentative"><span class="from_repl">Easter</span> <span class="to_repl">Eastern</span></span> and Passover, we are witness again to Palestinian <span id="2640" class="replacement automatic tentative"><span class="from_repl">men</span> <span class="to_repl">male</span></span> , women <span id="YGPF" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">'s</span></span> and <span id="ZYJC" class="replacement automatic tentative"><span class="from_repl">children</span> <span class="to_repl">child</span></span> being beaten, chased, humiliated and viciously attacked, terror bombings on Gaza spreading fear and panic, and the very presence of <span id="83TT" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> people in their homeland <span id="4QOM" class="replacement automatic tentative"><span class="from_repl">under</span> <span class="to_repl">in connection with</span></span> violent assault.</td></tr><tr class="table-dark text-dark"><td>At this moment, war-mongering Israeli politicians and military commanders are not seeking to de-escalate. On the contrary, they are threatening more violence and punishment, mobilizing army forces and inciting their settler militias, preparing for more aggressions against a defenseless people. Hostile declarations against Palestinians by Israeli officials, including extremists in the government, leave no doubt as to the predominant Israeli choice – never one for peace, always one for war, trampling international law and human rights in pursuit of a military solution that aims at nothing less than submission and surrender of our people to this illegal settler-colonial occupation and apartheid regime.</td><td>At this moment, <span id="9TR4" class="replacement human tentative"><span class="from_repl">war-mongering</span> <span class="to_repl">warmongering</span></span> Israeli politicians and military commanders are not seeking to de-escalate. On the contrary, they are threatening more violence and punishment, mobilizing army forces and inciting their settler militias, preparing for more aggressions against a <span id="1UNK" class="replacement human tentative"><span class="from_repl">defenseless</span> <span class="to_repl">defenceless</span></span> people. Hostile declarations against Palestinians by Israeli officials, including extremists in the government, leave no doubt as to the predominant Israeli choice – never one for peace, always one for war, trampling international law and human rights in pursuit of a military solution that aims at nothing less than <span id="D3E0" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">the</span></span> submission and surrender of our people to this illegal settler-colonial occupation and apartheid regime.</td><td>At this <span id="OWIA" class="replacement automatic tentative"><span class="from_repl">moment</span> <span class="to_repl">movement</span></span> , <span id="TSXP" class="replacement automatic tentative"><span class="from_repl">war-</span> <span class="to_repl">armed conflict-</span></span> mongering <span id="Y0IR" class="replacement automatic tentative"><span class="from_repl">Israeli</span> <span class="to_repl">Israel</span></span> politicians and military commanders are not seeking to <span id="RIOU" class="replacement automatic tentative"><span class="from_repl">de-</span> <span class="to_repl">del-</span></span> escalate. On the contrary, they are threatening more violence <span id="67JX" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and punishment, mobilizing army forces <span id="BCS5" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and inciting their settler militias, preparing for more aggressions against a <span id="F15L" class="replacement automatic tentative"><span class="from_repl">defenseless</span> <span class="to_repl">defenceless</span></span> people. Hostile declarations against Palestinians by <span id="Y4NZ" class="replacement automatic tentative"><span class="from_repl">Israeli</span> <span class="to_repl">Israel</span></span> officials, including extremists in the <span id="0V46" class="replacement automatic tentative"><span class="from_repl">government</span> <span class="to_repl">the Government</span></span> , leave no doubt as to the predominant <span id="8UGJ" class="replacement automatic tentative"><span class="from_repl">Israeli</span> <span class="to_repl">Israel</span></span> choice – never one for peace <span id="HU1B" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> , always one for <span id="YZMS" class="replacement automatic tentative"><span class="from_repl">war</span> <span class="to_repl">armed conflict</span></span> , trampling international law <span id="F0B9" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and human <span id="3WJ6" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> rights in <span id="8F14" class="replacement automatic tentative"><span class="from_repl">pursuit</span> <span class="to_repl">pursuant</span></span> of a military <span id="XZQ7" class="replacement automatic tentative"><span class="from_repl">solution</span> <span class="to_repl">resolution</span></span> that <span id="8N2P" class="replacement automatic tentative"><span class="from_repl">aims</span> <span class="to_repl">is aimed</span></span> at nothing less <span id="FLE6" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> than <span id="8EVO" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> submission and surrender <span id="EKI0" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> of <span id="AGPA" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> people <span id="WV4H" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> to this illegal settler <span id="KTJV" class="replacement automatic tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> colonial occupation and apartheid regime <span id="JY23" class="replacement automatic tentative"><span class="from_repl">.</span> <span class="to_repl"></span></span></td></tr><tr class="table-light"><td> This dangerous situation threatening the lives of our people and regional and international peace and stability compels us to make yet another appeal to the international community. We call on the Security Council and all States to act with responsibility and urgency to protect the Palestinian people in the face of this aggression and to uphold international law as the only path to justice and peace. </td><td>This dangerous situation threatening the lives of our people and regional and international peace and stability compels us to make yet another appeal to the international community. We call on the Security Council and all States to act with responsibility and urgency to protect the Palestinian people in the face of this aggression and to uphold international law as the only path to justice and peace.</td><td>This dangerous situation threatening the <span id="T819" class="replacement automatic tentative"><span class="from_repl">lives</span> <span class="to_repl">life</span></span> of <span id="ESUL" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> people <span id="SMTA" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and <span id="PQKO" class="replacement automatic tentative"><span class="from_repl">regional</span> <span class="to_repl">subregional</span></span> and <span id="2YRX" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">the</span></span> international peace <span id="NHAJ" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and stability compels <span id="V53S" class="replacement automatic tentative"><span class="from_repl">us</span> <span class="to_repl">use</span></span> to <span id="9Q4O" class="replacement automatic tentative"><span class="from_repl">make</span> <span class="to_repl">made</span></span> yet <span id="09KG" class="replacement automatic tentative"><span class="from_repl">another</span> <span class="to_repl">other</span></span> appeal to <span id="WTMA" class="replacement automatic tentative"><span class="from_repl">the</span> <span class="to_repl"></span></span> international community. We call on the <span id="OPO5" class="replacement automatic tentative"><span class="from_repl">Security</span> <span class="to_repl"></span></span> Council and <span id="V060" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">that</span></span> all States <span id="R0XX" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">of America</span></span> to act with responsibility and urgency to protect the Palestinian people in the face of this aggression and to <span id="WOWW" class="replacement automatic tentative"><span class="from_repl">uphold</span> <span class="to_repl">upheld</span></span> international law <span id="7241" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> as the only <span id="3VMJ" class="replacement automatic tentative"><span class="from_repl">path</span> <span class="to_repl">pathway</span></span> to justice and peace.</td></tr><tr class="table-dark text-dark"><td>By now it is more clear than ever: Israel will never stop its crimes of its own accord; it must be pressured to stop and this requires first and foremost accountability. As long as accountability remains absent, Israel is proving time and again that it will continue wantonly and willfully breaching international law, colonizing and annexing the Palestinian land and violating the human rights of the Palestinian people in broad daylight, daring the international community to react, yet confident it will never be held accountable. This shameful record of action and inaction cannot continue. It is time to impose concrete and costly consequences on Israel, the occupying Power, for all of its illegal actions, including many constituting war crimes and crimes against humanity.</td><td>By now it is <span id="EYDO" class="replacement human tentative"><span class="from_repl">more clear</span> <span class="to_repl">clearer</span></span> than ever: Israel will never stop its crimes of its own accord; it must be pressured to stop <span id="RNGI" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and this requires <span id="3QUH" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> first and foremost <span id="ZLV6" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> accountability. As long as accountability remains absent, Israel is proving time and again that it will continue wantonly and <span id="9B24" class="replacement human tentative"><span class="from_repl">willfully breaching</span> <span class="to_repl">wilfully to breach</span></span> international law, <span id="LNU7" class="replacement human tentative"><span class="from_repl">colonizing</span> <span class="to_repl">colonize</span></span> and <span id="O51F" class="replacement human tentative"><span class="from_repl">annexing the</span> <span class="to_repl">annex</span></span> Palestinian land and <span id="6AFX" class="replacement human tentative"><span class="from_repl">violating</span> <span class="to_repl">violate</span></span> the human rights of the Palestinian people in broad daylight, daring the international community to react, yet confident it will never be held accountable. This shameful record of action and inaction cannot continue. It is time to impose concrete and costly consequences on Israel, the occupying Power, for all of its illegal actions, including many <span id="CNEQ" class="replacement human tentative"><span class="from_repl">constituting</span> <span class="to_repl">that constitute</span></span> war crimes and crimes against humanity.</td><td>By now it is more <span id="Z5TF" class="replacement automatic tentative"><span class="from_repl">clear</span> <span class="to_repl">clearer-</span></span> than <span id="3RQB" class="replacement automatic tentative"><span class="from_repl">ever</span> <span class="to_repl">-even</span></span> : <span id="S0PM" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> will never stop its crimes of its own accord; it must be pressured to stop and this requires first <span id="XAS8" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> and foremost accountability. As <span id="YOYV" class="replacement automatic tentative"><span class="from_repl">long</span> <span class="to_repl">longer</span></span> as accountability remains absent, <span id="HH5J" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> is <span id="C3SN" class="replacement automatic tentative"><span class="from_repl">proving time</span> <span class="to_repl">providing a timely manner</span></span> and again that it will continue wantonly and <span id="S0GX" class="replacement automatic tentative"><span class="from_repl">willfully</span> <span class="to_repl">wilfully</span></span> breaching international law, colonizing and annexing the Palestinian land <span id="Z3JV" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> and violating the human <span id="IUG2" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> rights of the Palestinian people in <span id="5LI8" class="replacement automatic tentative"><span class="from_repl">broad</span> <span class="to_repl">abroad</span></span> daylight, daring the international <span id="Z4B6" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> community to react, yet confident it will never be <span id="WLP1" class="replacement automatic tentative"><span class="from_repl">held</span> <span class="to_repl">rescheduled, and welcoming the holding of the regional seminar in the Parish of Saint John, Dominica,</span></span> accountable. This shameful record of <span id="2GWF" class="replacement automatic tentative"><span class="from_repl">action</span> <span class="to_repl">act</span></span> and inaction <span id="9P60" class="replacement automatic tentative"><span class="from_repl">cannot</span> <span class="to_repl">could not</span></span> continue. It is <span id="VJSE" class="replacement automatic tentative"><span class="from_repl">time</span> <span class="to_repl">a timely manner</span></span> to <span id="EZM1" class="replacement automatic tentative"><span class="from_repl">impose</span> <span class="to_repl">pose</span></span> concrete and costly consequences on <span id="IZZK" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> , the occupying Power, for <span id="DORD" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> all of its illegal <span id="GBV5" class="replacement automatic tentative"><span class="from_repl">actions</span> <span class="to_repl">action,</span></span> , including many constituting <span id="HBZ3" class="replacement automatic tentative"><span class="from_repl">war</span> <span class="to_repl">armed conflict</span></span> crimes <span id="8WM4" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and crimes against humanity.</td></tr><tr class="table-light"><td>H.E. Mr. António Guterres</td><td><span id="4BJE" class="replacement human tentative"><span class="from_repl">H.E. Mr. António Guterres</span> <span class="to_repl"></span></span></td><td><span id="46BC" class="replacement automatic tentative"><span class="from_repl">H.E. Mr.</span> <span class="to_repl">(Signed)</span></span> António Guterres</td></tr><tr class="table-dark text-dark"><td>The Secretary-General of the United Nations</td><td><span id="W8XI" class="replacement human tentative"><span class="from_repl">The Secretary-General of the United Nations</span> <span class="to_repl"></span></span></td><td>The <span id="DAW0" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">report of the</span></span> Secretary <span id="Y4XO" class="replacement automatic tentative"><span class="from_repl">-General</span> <span class="to_repl">- eneral of the Charter</span></span> of the United Nations</td></tr><tr class="table-light"><td>The United Nations</td><td><span id="VUSC" class="replacement human tentative"><span class="from_repl">The United Nations</span> <span class="to_repl"></span></span></td><td>The <span id="C7VM" class="replacement automatic tentative"><span class="from_repl">United Nations</span> <span class="to_repl">UN</span></span></td></tr><tr class="table-dark text-dark"><td>New York</td><td><span id="PXZ0" class="replacement human tentative"><span class="from_repl">New York</span> <span class="to_repl"></span></span></td><td><span id="MOH5" class="replacement automatic tentative"><span class="from_repl">New York</span> <span class="to_repl">Virtual</span></span></td></tr><tr class="table-light"><td>	We reiterate our calls on the international community to take a firm stand to oppose this ongoing Israeli aggression against the Palestinian people. Israel must be demanded to halt its attacks on Palestinian civilians and to halt its military raids and airstrikes and to respect all of its obligations, without exception, as the occupying Power in the Occupied Palestinian Territory, including East Jerusalem. </td><td>We reiterate our calls on the international community to take a firm stand to oppose this ongoing Israeli aggression against the Palestinian people. Israel must be demanded to halt its attacks on Palestinian civilians <span id="28VD" class="replacement human tentative"><span class="from_repl">and</span> <span class="to_repl">,</span></span> to halt its military raids and <span id="XQ9Z" class="replacement human tentative"><span class="from_repl">airstrikes</span> <span class="to_repl">air strikes</span></span> and to respect all of its obligations, without exception, as the occupying Power in the Occupied Palestinian Territory, including East Jerusalem.</td><td>We reiterate <span id="Z1J9" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> calls on the international <span id="F744" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> community to <span id="BD3Q" class="replacement automatic tentative"><span class="from_repl">take</span> <span class="to_repl">make</span></span> a firm <span id="N9BT" class="replacement automatic tentative"><span class="from_repl">stand</span> <span class="to_repl">stance</span></span> to oppose this <span id="PEOZ" class="replacement automatic tentative"><span class="from_repl">ongoing Israeli</span> <span class="to_repl">on-going Israel</span></span> aggression against the Palestinian people. <span id="5ASD" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> must be demanded to halt its attacks on Palestinian civilians and to halt its military raids and <span id="2DBN" class="replacement automatic tentative"><span class="from_repl">airstrikes</span> <span class="to_repl">air strikes</span></span> and to respect all <span id="0LE2" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> of its obligations, without <span id="34KP" class="replacement automatic tentative"><span class="from_repl">exception</span> <span class="to_repl">exemption</span></span> , as the occupying Power in the Occupied Palestinian Territory, including <span id="IULM" class="replacement automatic tentative"><span class="from_repl">East</span> <span class="to_repl">Eastern</span></span> Jerusalem.</td></tr><tr class="table-dark text-dark"><td>Moreover, it must be demanded to cease its incitement and provocations against worshippers and holy sites, reckless actions that are threatening to ignite a religious war with disastrous ramifications. Israel must respect in word and deed the historic and legal status quo at Al-Aqsa Mosque/Al-Haram Al-Sharif and respect the authority of the Islamic Waqf and custodianship of the Hashemite Kingdom of Jordan for Jerusalem’s holy sites without interference or conditionality. </td><td>Moreover, <span id="O0BD" class="replacement human tentative"><span class="from_repl">it</span> <span class="to_repl">Israel</span></span> must be demanded to cease its incitement and provocations against worshippers and holy sites, reckless actions that are threatening to ignite a religious war <span id="TJDJ" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> with disastrous ramifications. Israel must respect <span id="WSCC" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> in word and deed <span id="4XG5" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> the historic and legal status quo at <span id="AN4Z" class="replacement human tentative"><span class="from_repl">Al-</span> <span class="to_repl">the</span></span> Aqsa Mosque/ <span id="K6V5" class="replacement human tentative"><span class="from_repl">Al-</span> <span class="to_repl"></span></span> Haram <span id="6PYT" class="replacement human tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> -Sharif and respect the authority of the Islamic Waqf and custodianship of the Hashemite Kingdom of Jordan for Jerusalem's holy sites <span id="8203" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> without interference or conditionality.</td><td><span id="4ZT6" class="replacement automatic tentative"><span class="from_repl">Moreover</span> <span class="to_repl">In addition</span></span> , it must be demanded to cease its incitement and provocations against worshippers and holy sites, reckless <span id="3KFN" class="replacement automatic tentative"><span class="from_repl">actions</span> <span class="to_repl">action,</span></span> that are threatening to ignite a <span id="SDMU" class="replacement automatic tentative"><span class="from_repl">religious war</span> <span class="to_repl">religion armed conflict</span></span> with disastrous ramifications. <span id="B3XL" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> must respect in <span id="KML0" class="replacement automatic tentative"><span class="from_repl">word</span> <span class="to_repl">world</span></span> and deed the historic and legal <span id="SSF6" class="replacement automatic tentative"><span class="from_repl">status</span> <span class="to_repl">state</span></span> quo at <span id="LLC9" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="R678" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Aqsa Mosque/ <span id="3772" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="ESU9" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Haram <span id="2Z0N" class="replacement automatic tentative"><span class="from_repl">Al</span> <span class="to_repl">al</span></span> - <span id="7XOQ" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> Sharif and respect the <span id="9TGF" class="replacement automatic tentative"><span class="from_repl">authority</span> <span class="to_repl">authorites</span></span> of <span id="YU6G" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">the implementation by</span></span> the Islamic Waqf and custodianship of the Hashemite Kingdom of Jordan for Jerusalem's holy sites without interference or conditionality.</td></tr><tr class="table-light"><td>Once again, it must be stated: Israel is the occupying Power and has no right whatsoever to restrict the access of our worshippers and to assert its sovereignty or control at this holy site or anywhere else in East Jerusalem and the rest of the Occupied Palestinian Territory, where its presence and that of its military forces and settlers is absolutely illegal.</td><td>Once again, it must be stated: Israel is the occupying Power and has no right whatsoever to restrict the access of our worshippers <span id="UTST" class="replacement human tentative"><span class="from_repl">and</span> <span class="to_repl">or</span></span> to assert its sovereignty or control at this holy site or anywhere else in East Jerusalem and the rest of the Occupied Palestinian Territory, where its presence and that of its military forces and settlers is absolutely illegal.</td><td>Once again, it must be stated: <span id="9JH0" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> is the occupying Power and has no right whatsoever to restrict the access of <span id="1SRO" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> worshippers and to assert its sovereignty or control at this holy <span id="52VB" class="replacement automatic tentative"><span class="from_repl">site</span> <span class="to_repl">website</span></span> or anywhere else in <span id="4QGK" class="replacement automatic tentative"><span class="from_repl">East</span> <span class="to_repl">Eastern</span></span> Jerusalem and the rest of the Occupied Palestinian Territory, <span id="YAEK" class="replacement automatic tentative"><span class="from_repl">where</span> <span class="to_repl">when</span></span> its presence and that of its military forces <span id="508T" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and settlers is absolutely illegal.</td></tr><tr class="table-dark text-dark"><td>	The Charter of the United Nations and other relevant tenets of international law and countless relevant United Nations resolutions are unambiguous as to the need for action in the face of such egregious and systematic breaches. We thus reiterate our calls on the Security Council and all peace-loving nations to act and on the Secretary-General to use his good offices to oppose this aggression, to demand its halt, to provide protection for the Palestinian people and to ensure for them a horizon for justice and the realization of the inalienable human rights they continue to be deprived of by this illegal Israeli settler-colonial occupation and apartheid regime.</td><td>The Charter of the United Nations <span id="6E4D" class="replacement human tentative"><span class="from_repl">and</span> <span class="to_repl">,</span></span> other relevant tenets of international law and countless relevant United Nations resolutions are unambiguous as to the need for action in the face of such egregious and systematic breaches. We thus reiterate our calls on the Security Council and all peace-loving nations to act <span id="N6HS" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and on the Secretary-General to use his good offices to oppose this aggression, to demand its halt, to provide protection for the Palestinian people and to ensure for them a horizon for justice and the realization of the inalienable human rights they continue to be deprived of by this illegal Israeli settler-colonial occupation and apartheid regime.</td><td>The <span id="38OW" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">Charter of the</span></span> Charter of the United Nations <span id="LKSV" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and <span id="T9FW" class="replacement automatic tentative"><span class="from_repl">other</span> <span class="to_repl">another</span></span> relevant tenets of <span id="90UN" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">the</span></span> international law <span id="O76Y" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and countless relevant <span id="674N" class="replacement automatic tentative"><span class="from_repl">United Nations</span> <span class="to_repl">UN</span></span> resolutions are unambiguous as to the need for <span id="Q2N0" class="replacement automatic tentative"><span class="from_repl">action</span> <span class="to_repl">act</span></span> in the face of such egregious and <span id="RMQE" class="replacement automatic tentative"><span class="from_repl">systematic</span> <span class="to_repl">systemic</span></span> breaches. We thus reiterate <span id="MOAG" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> calls on the <span id="J4VK" class="replacement automatic tentative"><span class="from_repl">Security</span> <span class="to_repl"></span></span> Council and <span id="9JS0" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">that</span></span> all peace <span id="YP1R" class="replacement automatic tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> loving nations to act and on the <span id="ZR8Z" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">report of the</span></span> Secretary <span id="DE8I" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">- eneral to</span></span> - <span id="AJR8" class="replacement automatic tentative"><span class="from_repl">General to</span> <span class="to_repl"></span></span> use his good <span id="O04D" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> offices to oppose this aggression, to demand its halt, to <span id="W9TT" class="replacement automatic tentative"><span class="from_repl">provide</span> <span class="to_repl">provision of</span></span> protection for the Palestinian people and <span id="M88D" class="replacement automatic tentative"><span class="from_repl">to</span> <span class="to_repl"></span></span> ensure for them a horizon for justice and the realization of the inalienable human <span id="TPYE" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> rights they continue to be deprived of by this illegal <span id="JKR2" class="replacement automatic tentative"><span class="from_repl">Israeli</span> <span class="to_repl">Israel</span></span> settler <span id="42YD" class="replacement automatic tentative"><span class="from_repl">-</span> <span class="to_repl">-</span></span> colonial occupation and apartheid regime <span id="OYKS" class="replacement automatic tentative"><span class="from_repl">.</span> <span class="to_repl"></span></span></td></tr><tr class="table-light"><td>This letter is in follow-up to our 784 letters regarding the ongoing historic injustice against the Palestinian people and the crimes being perpetrated by Israel, the occupying Power, in the Occupied Palestinian Territory, including East Jerusalem, which constitutes the territory of the State of Palestine. These letters, dated from 29 September 2000 (A/55/432-S/2000/921) to 5 April 2023 (A/ES-10/932–S/2023/__) constitute a basic record of the crimes being committed by Israel, the occupying Power, against the Palestinian people since September 2000. For all of these war crimes, acts of State terrorism and systematic human rights violations being committed against the Palestinian people, Israel must be held accountable and the perpetrators brought to justice.</td><td><span id="LFJ1" class="replacement human tentative"><span class="from_repl">This</span> <span class="to_repl">The present</span></span> letter is in follow-up to our 784 letters regarding the ongoing historic injustice against the Palestinian people and the crimes being perpetrated by Israel, the occupying Power, in the Occupied Palestinian Territory, including East Jerusalem, which constitutes the territory of the State of Palestine. <span id="YBC0" class="replacement human tentative"><span class="from_repl">These</span> <span class="to_repl">Those</span></span> letters, dated from 29 September 2000 ( <span id="DLJB" class="replacement human tentative"><span class="from_repl">A/55/432-S/2000/921</span> <span class="to_repl">A/55/432–S/2000/921</span></span> ) to 5 April 2023 ( <span id="BFO7" class="replacement human tentative"><span class="from_repl">A/ES-10/932–S/2023/</span> <span class="to_repl">A/ES-10/932–S/2023/249</span></span> ) constitute a basic record of the crimes being committed by Israel, the occupying Power, against the Palestinian people since September 2000. For all of these war crimes, acts of State terrorism and systematic human rights violations being committed against the Palestinian people, Israel must be held accountable and the perpetrators brought to justice.</td><td>This letter is in follow <span id="O59K" class="replacement automatic tentative"><span class="from_repl">-</span> <span class="to_repl"></span></span> up to <span id="R6TH" class="replacement automatic tentative"><span class="from_repl">our</span> <span class="to_repl">the Organization's</span></span> 784 letters <span id="1MRA" class="replacement automatic tentative"><span class="from_repl">regarding</span> <span class="to_repl">with regard to</span></span> the <span id="9X78" class="replacement automatic tentative"><span class="from_repl">ongoing</span> <span class="to_repl">on-going</span></span> historic injustice against the Palestinian people <span id="JTP1" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and the crimes being perpetrated by <span id="4IJZ" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> , the occupying Power, in the Occupied Palestinian Territory, including <span id="OEHU" class="replacement automatic tentative"><span class="from_repl">East</span> <span class="to_repl">Eastern</span></span> Jerusalem, which constitutes the territory of the <span id="V8TV" class="replacement automatic tentative"><span class="from_repl">State</span> <span class="to_repl">Statef</span></span> of Palestine. <span id="FOKZ" class="replacement automatic tentative"><span class="from_repl">These</span> <span class="to_repl">The present</span></span> letters, dated from 29 September 2000 (A/55/432-S/2000/921) to 5 April 2023 (A/ES-10/932–S/2023/) constitute a basic record of the crimes being committed by <span id="JHNQ" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> , the occupying Power, against the Palestinian people <span id="MVG5" class="replacement automatic tentative"><span class="from_repl">since</span> <span class="to_repl">given that</span></span> September 2000. For all <span id="YTCL" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> of <span id="YX36" class="replacement automatic tentative"><span class="from_repl">these war</span> <span class="to_repl">the above-mentioned armed conflict</span></span> crimes, <span id="LRLE" class="replacement automatic tentative"><span class="from_repl">acts</span> <span class="to_repl">actions</span></span> of <span id="FJDT" class="replacement automatic tentative"><span class="from_repl">State</span> <span class="to_repl">Statef</span></span> terrorism <span id="ZUYI" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">,</span></span> and <span id="HU5P" class="replacement automatic tentative"><span class="from_repl">systematic</span> <span class="to_repl">systemic</span></span> human <span id="AAKW" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">-</span></span> rights violations being committed against the Palestinian people, <span id="DIY9" class="replacement automatic tentative"><span class="from_repl">Israel</span> <span class="to_repl">Israeli</span></span> must be <span id="MVSA" class="replacement automatic tentative"><span class="from_repl">held</span> <span class="to_repl">rescheduled, and welcoming the holding of the regional seminar in the Parish of Saint John, Dominica,</span></span> accountable and the perpetrators brought to justice.</td></tr><tr class="table-dark text-dark"><td>I should be grateful if you would arrange to have this letter distributed as an official document of the 10th emergency special session of the General Assembly, under agenda item 5, and of the Security Council.</td><td>I should be grateful if you would arrange to have <span id="TJJT" class="replacement human tentative"><span class="from_repl">this</span> <span class="to_repl">the present</span></span> letter distributed as <span id="RODN" class="replacement human tentative"><span class="from_repl">an official</span> <span class="to_repl">a</span></span> document of the <span id="XTT4" class="replacement human tentative"><span class="from_repl">10th</span> <span class="to_repl">tenth</span></span> emergency special session of the General Assembly, under agenda item 5, and of the Security Council.</td><td>I <span id="WIYJ" class="replacement automatic tentative"><span class="from_repl">should</span> <span class="to_repl">could</span></span> be grateful if <span id="SL8M" class="replacement automatic tentative"><span class="from_repl">you</span> <span class="to_repl">the President</span></span> would arrange to have this letter distributed as an official document of the <span id="2X4V" class="replacement automatic tentative"><span class="from_repl">10th</span> <span class="to_repl">tenth</span></span> emergency special session of the <span id="5OYW" class="replacement automatic tentative"><span class="from_repl">General</span> <span class="to_repl"></span></span> Assembly, <span id="SUTO" class="replacement automatic tentative"><span class="from_repl">under</span> <span class="to_repl">in connection with</span></span> agenda <span id="6WTB" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">sub-</span></span> item 5, and of the <span id="SGHP" class="replacement automatic tentative"><span class="from_repl">Security</span> <span class="to_repl"></span></span> Council.</td></tr><tr class="table-light"><td>Please accept, Excellency, the assurances of my highest consideration.</td><td><span id="YF6F" class="replacement human tentative"><span class="from_repl">Please accept, Excellency, the assurances of my highest consideration.</span> <span class="to_repl"></span></span></td><td>Please accept, Excellency, the assurances of my <span id="0YBL" class="replacement automatic tentative"><span class="from_repl">highest</span> <span class="to_repl">higher</span></span> consideration.</td></tr><tr class="table-dark text-dark"><td>           </td><td></td><td></td></tr><tr class="table-light"><td>Dr. Riyad Mansour</td><td><span id="NPEV" class="replacement human tentative"><span class="from_repl">Dr.</span> <span class="to_repl">(Signed)</span></span> Riyad Mansour</td><td><span id="5H44" class="replacement automatic tentative"><span class="from_repl">Dr.</span> <span class="to_repl">(Signed)</span></span> Riyad <span id="M5F4" class="replacement automatic tentative"><span class="from_repl">Mansour</span> <span class="to_repl">Mansur</span></span></td></tr><tr class="table-dark text-dark"><td>Minister</td><td>Minister</td><td><span id="JY2V" class="replacement automatic tentative"><span class="from_repl">Minister</span> <span class="to_repl">Mr.</span></span></td></tr><tr class="table-light"><td>, Permanent Observer</td><td><span id="A87X" class="replacement human tentative"><span class="from_repl">,</span> <span class="to_repl"></span></span> Permanent Observer</td><td>, Permanent Observer</td></tr><tr class="table-dark text-dark"><td></td><td><span id="NU5Q" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl"></span></span></td><td></td></tr><tr class="table-light"><td>United Nations</td><td>United Nations</td><td><span id="2VP7" class="replacement automatic tentative"><span class="from_repl">United Nations</span> <span class="to_repl">UN</span></span></td></tr><tr class="table-dark text-dark"><td>A/ES-10/933–S/2023/254</td><td>A/ES-10/933–S/2023/254</td><td>A/ES-10/933–S/2023/254</td></tr><tr class="table-light"><td> </td><td></td><td></td></tr><tr class="table-dark text-dark"><td>General Assembly</td><td>General Assembly</td><td><span id="OVBQ" class="replacement automatic tentative"><span class="from_repl">General Assembly</span> <span class="to_repl">eneral Assemblya</span></span></td></tr><tr class="table-light"><td>Security Council</td><td>Security Council</td><td><span id="BZAB" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">peace and security Council to the Secretary-General and the representatives of the members of the</span></span> Security Council</td></tr><tr class="table-dark text-dark"><td>Distr.: General</td><td>Distr.: General</td><td>Distr.: General <span id="EFSM" class="replacement automatic tentative"><span class="from_repl"></span> <span class="to_repl">and the representatives of the members of the Security Council</span></span></td></tr><tr class="table-light"><td>11 April 2023</td><td>11 April 2023</td><td>11 April 2023</td></tr><tr class="table-dark text-dark"><td>Original: English</td><td>Original: English</td><td>Original: English</td></tr><tr class="table-light"><td> PAGE  \* Arabic  \* MERGEFORMAT 3/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td><span id="J96X" class="replacement automatic tentative"><span class="from_repl">PAGE \*Arabic</span> <span class="to_repl">the Platform</span></span> \*MERGEFORMAT 3/ NUMPAGES \* <span id="23I3" class="replacement automatic tentative"><span class="from_repl">Arabic \*</span> <span class="to_repl"></span></span> MERGEFORMAT 4</td></tr><tr class="table-dark text-dark"><td> PAGE  \* Arabic  \* MERGEFORMAT 4/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 4/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td><span id="IUMF" class="replacement automatic tentative"><span class="from_repl">PAGE \*Arabic</span> <span class="to_repl">the Platform</span></span> \*MERGEFORMAT 4/ NUMPAGES \* <span id="16L5" class="replacement automatic tentative"><span class="from_repl">Arabic \*</span> <span class="to_repl"></span></span> MERGEFORMAT 4</td></tr></tbody>
+  </table>
+</div>
+
+</body>
+</html>
+

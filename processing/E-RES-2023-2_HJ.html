@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  display_counts()
+  
+}  
+
+function accept_repl(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+    <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div>
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+
+
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead>
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body"><tr class="table-light"><td> DOCVARIABLE "sss1" \* MERGEFORMAT E/2023/L.4</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/2023/L.4</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/2023/L.4</td></tr><tr class="table-dark text-dark"><td>2023 session</td><td>2023 session</td><td>2023 session</td></tr><tr class="table-light"><td>Agenda item 19 (a)</td><td>Agenda item 19 (a)</td><td>Agenda item 19 (a)</td></tr><tr class="table-dark text-dark"><td>Social and human rights questions: advancement of women</td><td>Social and human rights questions: advancement of women</td><td>Social and human rights questions: advancement of women</td></tr><tr class="table-light"><td>		Resolution adopted by the Economic and Social Council on 14 December 2022</td><td>Resolution adopted by the Economic and Social Council on 14 December 2022</td><td>Resolution adopted by the Economic and Social Council on 14 December 2022</td></tr><tr class="table-dark text-dark"><td>		[on a proposal considered in plenary meeting (E/2023/L.4)]</td><td>[on a proposal considered in plenary meeting (E/2023/L.4)]</td><td>[on a proposal considered in plenary meeting (E/2023/L.4)]</td></tr><tr class="table-light"><td>	2023/2.	Removal of the Islamic Republic of Iran from membership in the Commission on the Status of Women for the remainder of its 2022–2026 term</td><td>2023/2. Removal of the Islamic Republic of Iran from membership in the Commission on the Status of Women for the remainder of its 2022–2026 term</td><td>2023/2. Removal of the Islamic Republic of Iran from membership in the Commission on the Status of Women for the remainder of its 2022–2026 term</td></tr><tr class="table-dark text-dark"><td>	The Economic and Social Council,</td><td>The Economic and Social Council,</td><td>The Economic and Social Council,</td></tr><tr class="table-light"><td>	Recalling its resolution 11 (II) of 21 June 1946, by which it established the Commission on the Status of Women, in particular paragraph 1 thereof, in which it is stated that “the functions of the Commission shall be to prepare recommendations and reports to the Economic and Social Council on promoting women’s rights in political, economic, social, and educational fields” and that “the Commission shall also make recommendations to the Council on urgent problems requiring immediate attention in the field of women’s rights”,</td><td>Recalling its resolution 11 (II) of 21 June 1946, by which it established the Commission on the Status of Women, in particular paragraph 1 thereof, in which it is stated that “the functions of the Commission shall be to prepare recommendations and reports to the Economic and Social Council on promoting women's rights in political, economic, social, and educational fields” and that “the Commission shall also make recommendations to the Council on urgent problems requiring immediate attention in the field of women's rights”,</td><td>Recalling its resolution 11 (II) of 21 June 1946, by which it established the Commission on the Status of Women, in particular paragraph 1 thereof, in which it is stated that “the functions of the Commission shall be to prepare recommendations and reports to the Economic and Social Council on promoting women's rights in political, economic, social, and educational fields” and that “the Commission shall also make recommendations to the Council on urgent problems requiring immediate attention in the field of women's rights”,</td></tr><tr class="table-dark text-dark"><td>	Recalling also its resolution 1996/6 of 22 July 1996, in which it expanded the mandate of the Commission on the Status of Women to include, inter alia, “[i]dentify[ing] emerging issues, trends and new approaches to issues affecting the situation of women or equality between women and men that require urgent consideration and make substantive recommendations thereon”,</td><td>Recalling also its resolution 1996/6 of 22 July 1996, in which it expanded the mandate of the Commission on the Status of Women to include, inter alia, “[i]dentify[ing] emerging issues, trends and new approaches to issues affecting the situation of women or equality between women and men that require urgent consideration and make substantive recommendations thereon”,</td><td>Recalling also its resolution 1996/6 of 22 July 1996, in which it expanded the mandate of the Commission on the Status of Women to include, inter alia, “[i]dentify[ing] emerging issues, trends and new approaches to issues affecting the situation of women or equality between women and men that require urgent consideration and make substantive recommendations thereon”,</td></tr><tr class="table-light"><td>	Expressing serious concern over the actions of the Government of the Islamic Republic of Iran since September 2022 to continuously undermine and increasingly suppress the human rights of women and girls, including the right to freedom of expression and opinion, often with the use of excessive force, by administering policies flagrantly contrary to the human rights of women and girls and to the mandate of the Commission on the Status of Women, as well as through the use of lethal force resulting in the deaths of peaceful protestors, including women and girls, </td><td>Expressing serious concern over the actions of the Government of the Islamic Republic of Iran since September 2022 to continuously undermine and increasingly suppress the human rights of women and girls, including the right to freedom of expression and opinion, often with the use of excessive force, by administering policies flagrantly contrary to the human rights of women and girls and to the mandate of the Commission on the Status of Women, as well as through the use of lethal force resulting in the deaths of peaceful protestors, including women and girls,</td><td>Expressing serious concern over the actions of the Government of the Islamic Republic of Iran since September 2022 to continuously undermine and increasingly suppress the human rights of women and girls, including the right to freedom of expression and opinion, often with the use of excessive force, by administering policies flagrantly contrary to the human rights of women and girls and to the mandate of the Commission on the Status of Women, as well as through the use of lethal force resulting in the deaths of peaceful <span id="SRMM" class="replacement automatic tentative"><span class="from_repl">protestors</span> <span class="to_repl">protesters</span></span> , including women and girls,</td></tr><tr class="table-dark text-dark"><td>	Decides to remove with immediate effect the Islamic Republic of Iran from membership in the Commission on the Status of Women for the remainder of its 2022–2026 term.</td><td>Decides to remove with immediate effect the Islamic Republic of Iran from membership in the Commission on the Status of Women for the remainder of its 2022–2026 term.</td><td>Decides to remove with immediate effect the Islamic Republic of Iran from membership in the Commission on the Status of Women for the remainder of its 2022–2026 term.</td></tr><tr class="table-light"><td>5th plenary meeting</td><td>5th plenary meeting</td><td>5th plenary meeting</td></tr><tr class="table-dark text-dark"><td>14 December 2022</td><td>14 December 2022</td><td>14 December 2022</td></tr><tr class="table-light"><td>United Nations</td><td>United Nations</td><td>United Nations</td></tr><tr class="table-dark text-dark"><td>E/RES/2023/2</td><td>E/RES/2023/2</td><td>E/RES/2023/2</td></tr><tr class="table-light"><td> </td><td></td><td></td></tr><tr class="table-dark text-dark"><td>Economic and Social Council</td><td>Economic and Social Council</td><td>Economic and Social Council</td></tr><tr class="table-light"><td>Distr.: General</td><td>Distr.: General</td><td>Distr.: General</td></tr><tr class="table-dark text-dark"><td>9 January 2023</td><td>9 January 2023</td><td>9 January 2023</td></tr><tr class="table-light"><td> PAGE  \* Arabic  \* MERGEFORMAT 2/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-dark text-dark"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT 22-26853</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-26853</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 22-26853</td></tr><tr class="table-light"><td> DOCVARIABLE "FooterJN" \* MERGEFORMAT </td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT</td><td>DOCVARIABLE "FooterJN \*MERGEFORMAT</td></tr><tr class="table-dark text-dark"><td> PAGE  \* Arabic  \* MERGEFORMAT 3/ NUMPAGES  \* Arabic  \* MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-light"><td> DOCVARIABLE "sss1" \* MERGEFORMAT E/RES/2023/2</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/RES/2023/2</td><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/RES/2023/2</td></tr></tbody>
+  </table>
+</div>
+
+</body>
+</html>
+
