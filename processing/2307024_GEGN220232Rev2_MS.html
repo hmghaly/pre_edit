@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
+
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>original</th><th>final</th><th>edited</th></tr></thead>
+    <tbody id="data_display_table_body"><tr class="table-light" name="word/header2.xml|96aaec8583"><td>DOCVARIABLE "sss1 \*MERGEFORMAT GEGN.2/2023/2/Rev.2</td></tr><tr class="table-dark text-dark" name="word/document.xml|2f8c1a47ae"><td>United Nations Group of Experts on Geographical Names</td></tr><tr class="table-light" name="word/document.xml|f559453db2"><td>2023 session</td></tr><tr class="table-dark text-dark" name="word/document.xml|bbf3f40e00"><td>New York, 1–5 May 2023</td></tr><tr class="table-light" name="word/document.xml|d5363840af"><td>* GEGN.2/2023/1.</td></tr><tr class="table-dark text-dark" name="word/document.xml|e4af2d00be"><td>**The Chair may be assisted by a facilitator to facilitate the discussions of agenda items.</td></tr><tr class="table-light" name="word/document.xml|47a96a1810"><td>Item 2 (b) of the provisional agenda <span id="BIGV" class="replacement automatic insert tentative" name="agenda* | agenda**"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">*</span></span> *</td></tr><tr class="table-dark text-dark" name="word/document.xml|83f7ec4fda"><td>Organizational matters</td></tr><tr class="table-light" name="word/document.xml|03b970cc3d"><td>Organization of work* <span id="4223" class="replacement automatic insert tentative" name="** | ***"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">*</span></span> *</td></tr><tr class="table-dark text-dark" name="word/document.xml|edaf94f3cb"><td>Note by the Secretariat</td></tr><tr class="table-light" name="word/document.xml|60a5074256"><td>1. The proposed organization of work and times for the 2023 session of the <span id="J4YC" class="replacement automatic delete tentative" name="the United Nations Group | the Group"><span class="from_repl from_initial">United Nations</span> <span class="to_repl to_initial"></span></span> Group of Experts on Geographical Names has been prepared pursuant to relevant decisions of the General Assembly, the Economic and Social Council and the Bureau of the Group of Experts in order to facilitate the consideration of agenda items within the time and services allocated to the Group.</td></tr><tr class="table-dark text-dark" name="word/document.xml|1f7cfcae10"><td>2. The first meeting of the 2023 session of the Group of Experts will be convened on Monday, 1 May 2023, at 10.30 a.m. Facilities will be available for two formal meetings each day. Morning meetings will be held from 10 a.m. to 1 p.m. (except on Monday, 1 May, when the first meeting will start at 10.30 a.m.); afternoon meetings will be held from 3 to 6 p.m.</td></tr><tr class="table-light" name="word/document.xml|b86b9f8cd0"><td>Proposed organization of work</td></tr><tr class="table-dark text-dark" name="word/document.xml|7ae8060d33"><td>Date/time</td></tr><tr class="table-light" name="word/document.xml|ba2c8a1a51"><td><span id="AA1I" class="replacement automatic replace tentative" name="Agenda item | Item"><span class="from_repl from_initial">Agenda item</span> <span class="to_repl to_initial">Item</span></span></td></tr><tr class="table-dark text-dark" name="word/document.xml|a88b6bdd04"><td>Programme</td></tr><tr class="table-light" name="word/document.xml|3247b5ce06"><td>Monday, 1 May</td></tr><tr class="table-dark text-dark" name="word/document.xml|076c185482"><td>10.30 a.m.–1 p.m.</td></tr><tr class="table-light" name="word/document.xml|3dd2372d53"><td>1. Opening of the session</td></tr><tr class="table-dark text-dark" name="word/document.xml|d140821088"><td>Opening address by the Chair of the United Nations Group of Experts on Geographical Names</td></tr><tr class="table-light" name="word/document.xml|727727f3b0"><td>Welcome remarks by Assistant Secretary-General, for Economic Development and Chief Economist</td></tr><tr class="table-dark text-dark" name="word/document.xml|4fff627849"><td>2. Organizational matters</td></tr><tr class="table-light" name="word/document.xml|24caf77984"><td>(a) Adoption of the agenda</td></tr><tr class="table-dark text-dark" name="word/document.xml|58e26e6502"><td>(b) Organization of work</td></tr><tr class="table-light" name="word/document.xml|60c447df9c"><td>(c) Credentials of observers</td></tr><tr class="table-dark text-dark" name="word/document.xml|2e6158775f"><td>Adoption of the agenda, organization of work, credentials of observers</td></tr><tr class="table-light" name="word/document.xml|e37a89b2de"><td>3. Reports of the Chair and the Secretariat</td></tr><tr class="table-dark text-dark" name="word/document.xml|d6ce85e635"><td>Introduction of reports</td></tr><tr class="table-light" name="word/document.xml|3b9bb2f592"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|00739286cb"><td>4. Reports</td></tr><tr class="table-light" name="word/document.xml|bd18d7a300"><td>National dialogue on National names standardization</td></tr><tr class="table-dark text-dark" name="word/document.xml|107e50571d"><td>(a) Governments on the situation in their countries and on the progress made in the standardization of geographical names</td></tr><tr class="table-light" name="word/document.xml|0a177629c0"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|60d7db16df"><td>(b) Divisions of the Groups of Experts</td></tr><tr class="table-light" name="word/document.xml|3be47b5b39"><td>Introduction of divisional reports</td></tr><tr class="table-dark text-dark" name="word/document.xml|92bb541668"><td>General discussion and summary</td></tr><tr class="table-light" name="word/document.xml|f7c7595c68"><td>3–6 p.m.</td></tr><tr class="table-dark text-dark" name="word/document.xml|f0ab6c7e0b"><td>8. Monitoring and evaluation of the strategic plan and programme of work, 2021–2029, and of the work of the Group of Experts</td></tr><tr class="table-light" name="word/document.xml|341aac4be6"><td>Introduction and presentation of documents</td></tr><tr class="table-dark text-dark" name="word/document.xml|9896f40cb7"><td>General discussion and summary</td></tr><tr class="table-light" name="word/document.xml|56279d4fcc"><td>4. Reports (continued)</td></tr><tr class="table-dark text-dark" name="word/document.xml|0a0183f8f3"><td>(c) Activities on the standardization of geographical names in Africa;</td></tr><tr class="table-light" name="word/document.xml|06b9350913"><td>(d) National and international meetings and conferences</td></tr><tr class="table-dark text-dark" name="word/document.xml|fa117623bd"><td>Introduction of reports</td></tr><tr class="table-light" name="word/document.xml|54fc934651"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|2d35f32eda"><td>5. Cooperation and liaison with other organizations</td></tr><tr class="table-light" name="word/document.xml|110b9f30c9"><td>(a) International organizations</td></tr><tr class="table-dark text-dark" name="word/document.xml|752ce97549"><td>(b) Economic Commission for Africa</td></tr><tr class="table-light" name="word/document.xml|fd0091c766"><td>(c) Committee of Experts on Global Geospatial Information Management</td></tr><tr class="table-dark text-dark" name="word/document.xml|cf889b20a0"><td>Introduction of reports</td></tr><tr class="table-light" name="word/document.xml|6cf1da2ef9"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|60883af3f4"><td>Tuesday, 2 May</td></tr><tr class="table-light" name="word/document.xml|59639e17e0"><td>10 a.m.–1 p.m.</td></tr><tr class="table-dark text-dark" name="word/document.xml|b83094a9ae"><td>Special presentation</td></tr><tr class="table-light" name="word/document.xml|bc3439d098"><td>United Nations Permanent Forum on Indigenous Issues, Ms. Aluki Kotierk (Canada)</td></tr><tr class="table-dark text-dark" name="word/document.xml|8a04d5ee98"><td>4 (a) (continued)</td></tr><tr class="table-light" name="word/document.xml|c49fabf831"><td></td></tr><tr class="table-dark text-dark" name="word/document.xml|1cf85dc9e2"><td>National dialogue on "Cultural aspects of geographical names standardization”</td></tr><tr class="table-light" name="word/document.xml|0817672cd9"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|13cf77dd17"><td>6. National and international standardization of geographical names</td></tr><tr class="table-light" name="word/document.xml|57dff51a48"><td>(a) Names collection, office treatment, national authorities, features beyond a single sovereignty and international cooperation</td></tr><tr class="table-dark text-dark" name="word/document.xml|5b8ab0e0d6"><td>Introduction and presentation of documents</td></tr><tr class="table-light" name="word/document.xml|3743a8b689"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|dab6ac12cd"><td>3–6 p.m.</td></tr><tr class="table-light" name="word/document.xml|0c030cf82f"><td>6. (continued)</td></tr><tr class="table-dark text-dark" name="word/document.xml|8d37981cfb"><td>(b) Toponymic guidelines for map and other editors for international use</td></tr><tr class="table-light" name="word/document.xml|419987aeb6"><td>7. Social and economic benefits, supporting sustainable development, measures taken and proposed for the implementation of resolutions</td></tr><tr class="table-dark text-dark" name="word/document.xml|655d4296eb"><td>Introduction and presentation of documents</td></tr><tr class="table-light" name="word/document.xml|b4959d5ea5"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|9bbc96efac"><td>Panel discussion</td></tr><tr class="table-light" name="word/document.xml|caaf422f26"><td>Strengthening relationships, links and connections in geographical names standardization and for sustainable development and pandemic recovery</td></tr><tr class="table-dark text-dark" name="word/document.xml|ae1d97f67b"><td>Wednesday, 3 May</td></tr><tr class="table-light" name="word/document.xml|4ef004db36"><td>10 a.m.–1 p.m.</td></tr><tr class="table-dark text-dark" name="word/document.xml|9852186e2c"><td>Special presentation</td></tr><tr class="table-light" name="word/document.xml|4dfaa8f880"><td>“Addressing Data challenges responding to emergencies and disasters” Sohail Elabd, Esri USA</td></tr><tr class="table-dark text-dark" name="word/document.xml|ff7fb9dce0"><td>4 (a) (continued)</td></tr><tr class="table-light" name="word/document.xml|f73edc912a"><td></td></tr><tr class="table-dark text-dark" name="word/document.xml|4d7fc918b3"><td>National dialogue on “Technology, innovation and standards for geographical names data management”</td></tr><tr class="table-light" name="word/document.xml|7005367c6c"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|ac45466dad"><td>9. Issues of publicity for the Group of Experts and funding of Group projects</td></tr><tr class="table-light" name="word/document.xml|d62c5904e1"><td>Presentation by the Convenor of the Working Group on Publicity and Funding</td></tr><tr class="table-dark text-dark" name="word/document.xml|a4c6a02e33"><td>General discussion and summary</td></tr><tr class="table-light" name="word/document.xml|13be431c61"><td>3–6 p.m.</td></tr><tr class="table-dark text-dark" name="word/document.xml|dec301d79e"><td>10. Toponymic education</td></tr><tr class="table-light" name="word/document.xml|e7afdc0ab3"><td>Presentation by the Convenor of the Working Group on Training Courses in Toponymy</td></tr><tr class="table-dark text-dark" name="word/document.xml|bb97ccf0a0"><td>General discussion and summary</td></tr><tr class="table-light" name="word/document.xml|f37a98ceaf"><td>11. Toponymic terminology</td></tr><tr class="table-dark text-dark" name="word/document.xml|8d477db295"><td>Presentation by the Convenor of the Working Group on Toponymic Terminology</td></tr><tr class="table-light" name="word/document.xml|a9ce4afff1"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|ae419d095b"><td>Panel discussion</td></tr><tr class="table-light" name="word/document.xml|b704cd5eb4"><td>Connections between geographical names and the environment</td></tr><tr class="table-dark text-dark" name="word/document.xml|5bc2c60174"><td>Thursday, 4 May</td></tr><tr class="table-light" name="word/document.xml|ecdcdf3b7a"><td>10 a.m.–1 p.m.</td></tr><tr class="table-dark text-dark" name="word/document.xml|2186ddd993"><td>Special presentation</td></tr><tr class="table-light" name="word/document.xml|1503da179e"><td>Herder Institute (Germany) “The Gazetteers.net Web Application: A Tool for Harvesting Digital Gazetteers”</td></tr><tr class="table-dark text-dark" name="word/document.xml|a74da529c1"><td>4</td></tr><tr class="table-light" name="word/document.xml|211a1670ba"><td>(a) (continued)</td></tr><tr class="table-dark text-dark" name="word/document.xml|2c1dafbfa3"><td>National dialogue on “Cooperation, training <span id="R9I0" class="replacement automatic delete tentative" name="training, and | training and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and promotion”</td></tr><tr class="table-light" name="word/document.xml|9a167f69a1"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|1f52901449"><td>12. Geographical names as culture, heritage and identity, including indigenous, minority and regional languages and multilingual issues</td></tr><tr class="table-light" name="word/document.xml|bd2ddc1c64"><td>Introduction by the Convenor of the Working Group on Geographical Names as Cultural Heritage</td></tr><tr class="table-dark text-dark" name="word/document.xml|27e17684f2"><td>Presentation of documents</td></tr><tr class="table-light" name="word/document.xml|8f5b7533ba"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|f72c9704bf"><td>13. Exonyms</td></tr><tr class="table-light" name="word/document.xml|1a6f4349d9"><td>Introduction by the Convenor of the Working Group on Exonyms</td></tr><tr class="table-dark text-dark" name="word/document.xml|1c614b7709"><td>Presentation of documents</td></tr><tr class="table-light" name="word/document.xml|6928ab77be"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|1f04d8eb8c"><td>3–6 p.m.</td></tr><tr class="table-light" name="word/document.xml|800867cb2f"><td>3. (continued)</td></tr><tr class="table-dark text-dark" name="word/document.xml|136e836ff8"><td>14. Geographical names data management</td></tr><tr class="table-light" name="word/document.xml|0f8b7d6093"><td>Report of the Secretariat – UNGEGN World Geographical Names Database</td></tr><tr class="table-dark text-dark" name="word/document.xml|ef828d7c6e"><td>Presentation, discussion and summary</td></tr><tr class="table-light" name="word/document.xml|16b8e92cfc"><td>Introduction by the Convenor of the Working Group on Geographical Names Data Management</td></tr><tr class="table-dark text-dark" name="word/document.xml|674d16e362"><td>Presentation of documents</td></tr><tr class="table-light" name="word/document.xml|97cf1bf884"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|9b7bf1b412"><td>15. Writing systems and pronunciation</td></tr><tr class="table-light" name="word/document.xml|70bb643959"><td>Introduction by the Convenor of the Working Group on Romanization Systems</td></tr><tr class="table-dark text-dark" name="word/document.xml|e6c0812acc"><td>Presentation of documents</td></tr><tr class="table-light" name="word/document.xml|dbe76c38b2"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|2b587fef90"><td>Friday, 5 May</td></tr><tr class="table-light" name="word/document.xml|a57b332576"><td>10 a.m.–1 p.m.</td></tr><tr class="table-dark text-dark" name="word/document.xml|24f91ac7ae"><td>Special presentation</td></tr><tr class="table-light" name="word/document.xml|572b6986ff"><td>"Geographical names at Google: Giving users the most useful names for their daily tasks", Osi Peters and Ethan Russell (Google)</td></tr><tr class="table-dark text-dark" name="word/document.xml|63f2fc1fcc"><td>4 (a) (continued)</td></tr><tr class="table-light" name="word/document.xml|bfe9097a44"><td></td></tr><tr class="table-dark text-dark" name="word/document.xml|93d0af9883"><td>National dialogue on “Romanization, Maritime names and other topics”</td></tr><tr class="table-light" name="word/document.xml|209d912554"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|38e41457e1"><td>16. Other geographical issues</td></tr><tr class="table-light" name="word/document.xml|2a215a484d"><td>General discussion and summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|5ec21717d6"><td>17. Presentation and <span id="I0D6" class="replacement automatic insert tentative" name="and adoption | and the adoption"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the</span></span> adoption of decisions</td></tr><tr class="table-light" name="word/document.xml|96b38cd90c"><td>Presentation of informal papers</td></tr><tr class="table-dark text-dark" name="word/document.xml|9cd876ef69"><td>Discussion and consideration of the draft decisions</td></tr><tr class="table-light" name="word/document.xml|d41ad3111f"><td>19. Arrangements for the 2025 session of the Group of Experts</td></tr><tr class="table-dark text-dark" name="word/document.xml|ee3646501b"><td>Consideration of draft provisional agenda of the 2025 session of the Group of Experts</td></tr><tr class="table-light" name="word/document.xml|ab108ba983"><td>3–6 p.m.</td></tr><tr class="table-dark text-dark" name="word/document.xml|4118a0a413"><td>21. Other business</td></tr><tr class="table-light" name="word/document.xml|b7a5d81eff"><td>18. Adoption of the report on the 2023 session</td></tr><tr class="table-dark text-dark" name="word/document.xml|6b0221310d"><td>Presentation of the draft report</td></tr><tr class="table-light" name="word/document.xml|c95d2d3bfa"><td>Interactive discussion and adoption of the draft report</td></tr><tr class="table-dark text-dark" name="word/document.xml|007d92c7e8"><td>20. Election of officers for the subsequent session</td></tr><tr class="table-light" name="word/document.xml|83686b14fe"><td>Nominations to membership in the Bureau and their consideration by the Group of Experts</td></tr><tr class="table-dark text-dark" name="word/document.xml|678d21e8fa"><td>22. Closing of the session</td></tr><tr class="table-light" name="word/document.xml|074949f30b"><td>Conclusion of the session</td></tr><tr class="table-dark text-dark" name="word/header3.xml|d5dff4b96c"><td>GEGN.2/2023/2/Rev.2</td></tr><tr class="table-light" name="word/header3.xml|a8ea6cef9c"><td></td></tr><tr class="table-dark text-dark" name="word/header3.xml|324fd0cbec"><td>14 April 2023</td></tr><tr class="table-light" name="word/header3.xml|05b292e034"><td>Original: English</td></tr><tr class="table-dark text-dark" name="word/footer3.xml|ab02748d34"><td>23-05630 (E) 290323</td></tr><tr class="table-light" name="word/footer3.xml|8d2866b8df"><td>*2305630</td></tr><tr class="table-dark text-dark" name="word/footer2.xml|bc34c59370"><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-light" name="word/footer2.xml|07a001cfcd"><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 23-05630</td></tr><tr class="table-dark text-dark" name="word/footer1.xml|796fcd4239"><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 23-05630</td></tr><tr class="table-light" name="word/footer1.xml|f5f2bc4e0f"><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-dark text-dark" name="word/header1.xml|2530252240"><td>DOCVARIABLE "sss1 \*MERGEFORMAT GEGN.2/2023/2/Rev.2</td></tr></tbody>
+  </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>        
+      </div>
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+

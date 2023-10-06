@@ -11,9 +11,13 @@ app = Flask(__name__)
 upload_dir="uploaded"
 processing_dir="processing"
 output_dir="output"
+logs_dir="logs"
 if not os.path.exists(upload_dir): os.makedirs(upload_dir)
 if not os.path.exists(processing_dir): os.makedirs(processing_dir)
 if not os.path.exists(output_dir): os.makedirs(output_dir)
+if not os.path.exists(logs_dir): os.makedirs(logs_dir)
+
+repl_log_fpath=os.path.join(logs_dir,"repl.txt")
 
 wv_fpath0="data-models/editing_word2vec_1198062_20.model"
 cur_wv_model=Word2Vec.load(wv_fpath0)
@@ -73,6 +77,18 @@ def pre_edit_api():
     pre_edited_sent_tokens,valid_repl=pre_edit(sent,loaded_model,refined_first_token_dict,pred_threshold=0)
     cur_dict["tokens"]=pre_edited_sent_tokens
     cur_dict["repl_list"]=valid_repl
+    return json.dumps(cur_dict)
+
+@app.route('/log_repl',methods = ['POST', 'GET'])
+def log_repl():
+    cur_dict={}
+    posted_data_dict={}
+    if request.method == 'POST':
+        posted_data=request.data.decode("utf-8")
+        posted_data_dict=json.loads(posted_data)
+    posted_data_dict["time"]=time.ctime()
+    log_something(json.dumps(posted_data_dict),repl_log_fpath)
+    cur_dict["success"]=True
     return json.dumps(cur_dict)
 
 

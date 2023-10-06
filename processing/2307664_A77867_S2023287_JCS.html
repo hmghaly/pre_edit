@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
+
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>original</th><th>final</th><th>edited</th></tr></thead>
+    <tbody id="data_display_table_body"><tr class="table-light" name="word/document.xml|357b52f38d"><td>General Assembly</td></tr><tr class="table-dark text-dark" name="word/document.xml|e8a3c97c94"><td>Security Council</td></tr><tr class="table-light" name="word/document.xml|1feb7cb797"><td>Seventy-seventh session</td></tr><tr class="table-dark text-dark" name="word/document.xml|b8ce709fa7"><td>Agenda items 30, 66, 67, 68, 73, 84 and 132</td></tr><tr class="table-light" name="word/document.xml|14028384be"><td>Prevention of armed conflict</td></tr><tr class="table-dark text-dark" name="word/document.xml|cc06cbef8c"><td>Elimination of racism, racial discrimination, xenophobia and related intolerance</td></tr><tr class="table-light" name="word/document.xml|492aad0d95"><td>Right of peoples to self-determination</td></tr><tr class="table-dark text-dark" name="word/document.xml|5313b3b6eb"><td>Promotion and protection of human rights</td></tr><tr class="table-light" name="word/document.xml|27f09ad0e5"><td>Responsibility of States for internationally wrongful acts</td></tr><tr class="table-dark text-dark" name="word/document.xml|30af4dda53"><td>The rule of law at the national and international levels</td></tr><tr class="table-light" name="word/document.xml|3abb909b4d"><td>The responsibility to protect and the prevention of genocide, war crimes, ethnic cleansing and crimes against humanity</td></tr><tr class="table-dark text-dark" name="word/document.xml|6c6849b5e0"><td>Seventy-eighth year</td></tr><tr class="table-light" name="word/document.xml|b81fed1d8a"><td>Letter dated 21 April 2023 from the Permanent Representative of Armenia</td></tr><tr class="table-dark text-dark" name="word/document.xml|d32855e530"><td>to the United Nations addressed to the Secretary-General</td></tr><tr class="table-light" name="word/document.xml|33e171be77"><td></td></tr><tr class="table-dark text-dark" name="word/document.xml|367b0fed72"><td></td></tr><tr class="table-light" name="word/document.xml|55bf2cc6c1"><td>UN/3101/218/2023</td></tr><tr class="table-dark text-dark" name="word/document.xml|2cc8640c5b"><td>21 April 2023, New York</td></tr><tr class="table-light" name="word/document.xml|f921eb9603"><td>Excellency,</td></tr><tr class="table-dark text-dark" name="word/document.xml|3a5446ada9"><td>Further to my letter dated 27 February 2023 (A/77/776-S/2023/150), I am writing to you in relation to Azerbaijan's continued attempts to deny responsibility for the well-documented fact of the systematic, massive violence perpetrated against the Armenian population in Sumgait, as demonstrated in the letter of the Permanent Representative of Azerbaijan dated 16 March 2023 (A/77/807-S/2023/204).</td></tr><tr class="table-light" name="word/document.xml|2f7046e21a"><td>The Sumgait massacre was the first in a series of violent crimes organized against the Armenian population by Azerbaijan. Eyewitnesses, local and international media reported extensively on gangs roaming around the city in search for ethnic Armenians to attack. The well-documented, detailed accounts of the atrocities include reports of Armenian victims “who were so badly mutilated by axes that their bodies could not be identified”, of women “stripped naked and set on fire, several raped repeatedly,” and other despicable crimes committed against the Armenian residents of the city. Deputy Prosecutor General of the USSR reported that gangs of youths hunting Armenians committed "terrible crimes" and that “there were massive disorders, accompanied by pogroms, arson and other outrages…”.</td></tr><tr class="table-dark text-dark" name="word/document.xml|6be2d50d62"><td>Due to the criminal inaction of the local law enforcement bodies, unchecked, barbaric violence against the Armenian population in Sumgait continued for three days, during which violent mobs attacked innocent civilians on the streets and in their apartments, targeting them exclusively on the grounds of ethnicity. No amount of deceptive, intentionally manipulative narrative can alter the truth that the Sumgait massacre was planned and executed with the encouragement and deliberate inaction of the Soviet Azerbaijani authorities.</td></tr><tr class="table-light" name="word/document.xml|e2f38f202e"><td>The Armenian residents of Sumgait became the first target of Azerbaijan's systematic anti-Armenian policy. The second wave of violence in November-December 1988 included massacres of Armenians in Kirovabad, Shamakhi, Shamkhor, Mingechaur, followed by the large-scale pogroms perpetrated against the Armenian residents of Baku in January 1990, which resulted in the mass killings and final displacement of 250.000 Armenians of the city.</td></tr><tr class="table-dark text-dark" name="word/document.xml|5e2d45c2ba"><td></td></tr><tr class="table-light" name="word/document.xml|5e1acfbf82"><td>H.E. MR. ANTÓNIO GUTERRES</td></tr><tr class="table-dark text-dark" name="word/document.xml|8cf0bdca05"><td>SECRETARY-GENERAL OF THE</td></tr><tr class="table-light" name="word/document.xml|0a64321716"><td>UNITED NATIONS</td></tr><tr class="table-dark text-dark" name="word/document.xml|78412244e1"><td>NEW YORK</td></tr><tr class="table-light" name="word/document.xml|46bea29f35"><td>On 7 July 1988, the European Parliament adopted a resolution condemning the massacres in Sumgait and the serious acts of violence in Baku, and indicating that such events, indeed, constituted a threat to the safety of the Armenians living in Azerbaijan.</td></tr><tr class="table-dark text-dark" name="word/document.xml|56cf859e90"><td>The pogroms against the Armenians had an aim of forcibly suppressing the democratic expression of the Armenians of Nagorno-Karabakh, heavily preceded by a wave of anti-Armenian statements and rallies that swept over Azerbaijan in February 1988.</td></tr><tr class="table-light" name="word/document.xml|2d75075272"><td>The Sumgait massacre and the large-scale anti-Armenian pogroms that ensued in other areas of Soviet Azerbaijan resulted in complete eradication of the Armenian community from Azerbaijan, with more than 400.000 people becoming refugees. In 2003, former Prosecutor of the Azerbaijani SSR Ilias Ismayilov was on record saying that “Those responsible for inciting the pogroms [in Sumgait], now sit in Milli Majlis (Azerbaijani Parliament) with parliamentary mandates in their pockets ”.The pogroms were followed by the instigation of an armed conflict against the Armenians of Nagorno-Karabakh, including the military operation “Koltso” (“Ring”) performed in 1991, as a result of which the Armenian population was ethnically cleansed from 22 villages; the systematic massacre of civilians, including the elderly, women and children, perpetrated in Maragha village of Nagorno-Karabakh in 1992; the ethnic cleansing of the Shahumyan region and part of the Martakert region in 1992.</td></tr><tr class="table-dark text-dark" name="word/document.xml|5c68f9d340"><td>Whatever distortions Azerbaijan may diligently fabricate while referring to the chronology of the Nagorno-Karabakh conflict, the fact of the matter is that no anti-Azerbaijani massacre took place in Armenia. Unlike the Armenian population in Azerbaijan, who became victims of massive, barbaric atrocities, there are no verified reports of any form of atrocity or state-sponsored mass killings against ethnic Azerbaijanis in Armenia.</td></tr><tr class="table-light" name="word/document.xml|f072171ed3"><td>According to the 2003 Report of the UN High Commissioner for Refugees, the Azerbaijanis in Armenia fled out of fear following the anti-Armenian pogroms in Sumgait and Baku in 1988-1989. The unaccountable assertions of “forcible deportation of Azerbaijanis from their historical homeland”, which allegedly predate the anti-Armenian massacre in Sumgait, thus, render all efforts to verify any such allegation as quite unavailing, not least because most of the localities, to which Azerbaijan's letter refers while making such assertions, appear to be either misspelled or misconstrued, and, therefore, impossible to identify.</td></tr><tr class="table-dark text-dark" name="word/document.xml|172358e9c9"><td>Azerbaijan's narratives continue to be conceived and formulated from the perspective of hate and discrimination, at the core of which is the brazen denial of the atrocities committed against the Armenian people. It is, for example, quite an indication that, in his letter dated 16 March, the Representative of Azerbaijan finds it “especially noteworthy” to highlight the identity of one particular individual, who was reportedly part of the group of “more than 90 perpetrators and accomplices” responsible for the Sumgait violence – exclusively on the basis of the aforementioned individual's ethnicity. In his letter addressed to the Secretary-General, the Representative of Azerbaijan finds it appropriate to single out one particular criminal out of as many as over 90, simply because that person reportedly happens to be of Armenian descent. Such ethnically motivated selectivity is, indeed, symptomatic of deep-rooted racism and Armenophobia, including at the level of officials and public institutions – a policy, from which Azerbaijan has been asked to refrain by the International Court <span id="8EVO" class="replacement automatic delete tentative" name="Court of Justice. | Court."><span class="from_repl from_initial">of Justice</span> <span class="to_repl to_initial"></span></span> .</td></tr><tr class="table-light" name="word/document.xml|0beaac0880"><td>Evidently, the lack of accountability for the past crimes has created fertile ground for elevating the instigation of anti-Armenian sentiments to the level of state policy in Azerbaijan. Over the years, the prominent historic, cultural and religious heritage of the Armenian communities in territories that were under the control of Azerbaijani authorities came to be razed to the ground. The barbaric destruction of over 5,000 medieval Christian Armenian cross-stones, which was carried out in 1998-2005 in Nakhijevan, is a stark indicator of the policy of cultural genocide by the country positioning itself as a “model of tolerance and multiculturalism”. Notably, Azerbaijan has rejected all requests for international fact-finding missions to research the extent, to which the valuable objects of medieval culture came under destruction in Nakhijevan.</td></tr><tr class="table-dark text-dark" name="word/document.xml|4af5bc6588"><td>Cultivation of racism and anti-Armenian hatred, along with the continued incitement of violence on ethnic and religious grounds have long come to be well-documented in numerous reports of the international organizations, including the Committee on the Elimination of Racial Discrimination and the European Commission against Racism and Intolerance, revealing the systemic nature of racial profiling, hateful and incendiary rhetoric, the prevailing sense of impunity and glorification of hate crimes perpetrators in Azerbaijan. To this date, Azerbaijan has not undertaken any measures to bring those responsible for anti-Armenian hate crimes to justice, and has, instead, adopted legislation prohibiting entry to the country of any person of Armenian origin, regardless of their citizenship, “because the authorities would be unable to provide them with security since they are ethnic Armenians”.</td></tr><tr class="table-light" name="word/document.xml|fc7c90cabc"><td>In September 2020, Azerbaijan initiated a new wave of deadly violence in the region, launching massive military attacks <span id="V53S" class="replacement automatic replace tentative" name="amidst | amid"><span class="from_repl from_initial">amidst</span> <span class="to_repl to_initial">amid</span></span> an unprecedented global pandemic in an attempt to resolve the Nagorno-Karabakh conflict by force. Despite Azerbaijan's efforts to offer justifications for its large-scale military aggression in September-November 2020, it was in reality the product of an intentional decision to walk away from negotiations and to begin a war, exposing the lives of thousands of people to imminent existential danger.</td></tr><tr class="table-dark text-dark" name="word/document.xml|ad612374cd"><td>Azerbaijan's large-scale military attacks against the territorial integrity of Armenia in September 2022 targeted densely populated areas and civilian infrastructure. The Azerbaijani military captured, tortured and executed female members of the Armenian military personnel, while videos of such despicable war crimes continue to be cheered and extensively celebrated over the Azerbaijani social networks.</td></tr><tr class="table-light" name="word/document.xml|68b4394cae"><td>The destabilizing actions of Azerbaijan, the ongoing blockade of Lachin Corridor - the only humanitarian lifeline connecting Nagorno-Karabakh to the outer world - accompanied by territorial claims, military threats and incendiary rhetoric against Armenia and the Armenian people, only serve to undermine the efforts aimed at de-escalating the situation and at finding solutions to sustainable peace in the region.</td></tr><tr class="table-dark text-dark" name="word/document.xml|5d32ad6afc"><td>Strengthening adherence to the norms and principles of the international law is vital for the promotion of justice, accountability and rule of law. It is long overdue for Azerbaijan to reject the aggressive, violent conduct in the region and commit, instead, to the full and unconditional implementation of the existing legal obligations, including those stemming from the legally binding orders issued by the International Court of Justice at the request of Armenia in 2021 and 2023, respectively.</td></tr><tr class="table-light" name="word/document.xml|19f1c40338"><td>I kindly ask that the present letter be circulated as a document of the <span id="Z5TF" class="replacement automatic replace tentative" name="77th | seventy-seventh"><span class="from_repl from_initial">77th</span> <span class="to_repl to_initial">seventy-seventh</span></span> session of the General Assembly, under agenda items 30 [Prevention of armed conflict], 66 [Elimination of racism, racial discrimination, xenophobia and related intolerance], 67 [Rights of peoples to self-determination], 68 [Promotion and protection of human rights], 73 [Responsibility of States for internationally wrongful acts], 84 [The rule of law at the national and international levels] and 132 [The responsibility to protect and the prevention of genocide, war crimes, ethnic cleansing and crimes against humanity] and of the Security Council.</td></tr><tr class="table-dark text-dark" name="word/document.xml|e9c6ee36f0"><td><span id="5LI8" class="replacement automatic replace tentative" name="MHER MARGARYAN | (Signed) Mher Margaryan"><span class="from_repl from_initial">MHER MARGARYAN</span> <span class="to_repl to_initial">(Signed) Mher Margaryan</span></span></td></tr><tr class="table-light" name="word/document.xml|e4d68016c2"><td>Ambassador <span id="WLP1" class="replacement automatic delete tentative" name="Ambassador, _se_ | Ambassador _se_"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span></td></tr><tr class="table-dark text-dark" name="word/document.xml|0f2b509bc6"><td>Permanent Representative</td></tr><tr class="table-light" name="word/document.xml|e4b55c888f"><td></td></tr><tr class="table-dark text-dark" name="word/header3.xml|db810c20bc"><td>United Nations</td></tr><tr class="table-light" name="word/header3.xml|861385b6bf"><td>A/77/867–S/2023/287</td></tr><tr class="table-dark text-dark" name="word/header3.xml|7fa367f90b"><td></td></tr><tr class="table-light" name="word/header3.xml|263f1f5c85"><td>General Assembly</td></tr><tr class="table-dark text-dark" name="word/header3.xml|cf729f3300"><td>Security Council</td></tr><tr class="table-light" name="word/header3.xml|54b8867cd5"><td>Distr.: General</td></tr><tr class="table-dark text-dark" name="word/header3.xml|c9f5ab437d"><td>24 April 2023</td></tr><tr class="table-light" name="word/header3.xml|e94118a724"><td>Original: English</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|b4ad66ddc5"><td>Thomas de Waal – “Black Garden: Armenia and Azerbaijan through Peace and War”, 2003</td></tr><tr class="table-light" name="word/footnotes.xml|99c7a42621"><td>“Soviet tells of 'pogroms by rioters in Azerbaijan”, The Washington Post, 15 March 1988</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|bb0d991f62"><td>Joint resolution replacing Docs. B2-538 and 587/88: Resolution on the situation in Soviet Armenia, No C 235/106, HYPERLINK "https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:JOC_1988_235_R_0080_01&from=EN https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=OJ:JOC_1988_235_R_0080_01&from=EN</td></tr><tr class="table-light" name="word/footnotes.xml|e62c277a4b"><td>“Zerkalo” newspaper, Azerbaijan, 21 February 2003</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|d6a8e75f6f"><td>“International Protection Considerations Regarding Armenian Asylum-Seekers and Refugees,” United Nations High Commissioner for Refugees (UNHCR), Geneva, September 2003, available at HYPERLINK "https://www.refworld.org/docid/3f5f27d14.html https://www.refworld.org/docid/3f5f27d14.html</td></tr><tr class="table-light" name="word/footnotes.xml|079dcfc997"><td>Order on the request for the indication of provisional measures made by the Republic of Armenia in the case concerning Application of the International Convention on the Elimination of All Forms of Racial Discrimination (Armenia v. Azerbaijan), 7 December 2021. Available at HYPERLINK "http://www.icj-cij.org/sites/default/files/case-related/180/180-20211207-PRE-01-00-EN.pdf www.icj-cij.org/sites/default/files/case-related/180/180-20211207-PRE-01-00-EN.pdf</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|0e6d0b4065"><td>Monumental loss: Azerbaijan and <span id="CNEQ" class="replacement automatic replace tentative" name="' | ‘"><span class="from_repl from_initial">'</span> <span class="to_repl to_initial">‘</span></span> the worst cultural genocide of the <span id="46BC" class="replacement automatic replace tentative" name="21st | twenty-first"><span class="from_repl from_initial">21st</span> <span class="to_repl to_initial">twenty-first</span></span> century': https://www.theguardian.com/artanddesign/2019/mar/01/monumental-loss-azerbaijan-cultural-genocide-khachkarshttps://www.theguardian.com/artanddesign/2019/mar/01/monumental-loss-azerbaijan-cultural-genocide-khachkars</td></tr><tr class="table-light" name="word/footnotes.xml|0b6dd1bb8d"><td>Committee on the Elimination of Racial Discrimination, Concluding observations on the combined tenth to twelfth periodic reports of Azerbaijan, HYPERLINK "http://www.undocs.org/CERD/C/AZE/CO/10-12 \t "blank" www.undocs.org/CERD/C/AZE/CO/10-12</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|f7c6a7f6c4"><td>European Commission against Racism and Intolerance (fifth monitoring cycle), HYPERLINK "https://rm.coe.int/fourth-report-on-azerbaijan/16808b5581 https://rm.coe.int/fourth-report-on-azerbaijan/16808b5581</td></tr><tr class="table-light" name="word/footnotes.xml|f846c8762c"><td>OSCE ODIHR Baseline study on cross-border mobility in the region, HYPERLINK "https://www.osce.org/files/f/documents/c/d/118506.pdf https://www.osce.org/files/f/documents/c/d/118506.pdf</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|6d5950a355"><td>Committee to Protect Journalists, Citing ethnicity, Azerbaijan bars photojournalist, HYPERLINK "https://cpj.org/2011/07/citing-ethnicity-azerbaijan-bars-photojournalist/" https://cpj.org/2011/07/citing-ethnicity-azerbaijan-bars-photojournalist/</td></tr><tr class="table-light" name="word/footnotes.xml|8fc2b92620"><td>Order on the request for the indication of provisional measures made by the Republic of Armenia in the case concerning Application of the International Convention on the Elimination of All Forms of Racial Discrimination (Armenia v. Azerbaijan), 7 December 2021. Available at HYPERLINK "http://www.icj-cij.org/sites/default/files/case-related/180/180-20211207-PRE-01-00-EN.pdf www.icj-cij.org/sites/default/files/case-related/180/180-20211207-PRE-01-00-EN.pdf</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|fb22fd1b06"><td>Order on the request for the indication of provisional measures made by the Republic of Armenia in the case concerning Application of the International Convention on the Elimination of All Forms of Racial Discrimination (Armenia v. Azerbaijan), 22 February 2023. Available at HYPERLINK "https://www.icj-cij.org/sites/default/files/case-related/180/180-20230222-ORD-01-00-EN.pdf https://www.icj-cij.org/sites/default/files/case-related/180/180-20230222-ORD-01-00-EN.pdf</td></tr></tbody>
+  </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>        
+      </div>
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+
