@@ -139,8 +139,8 @@ function update_repl_display(){
     pair_to_accept=""
   } 
   pair_to_accept=pair_to_accept.replace("|","⇨")
-  pair_to_accept=pair_to_accept.replace("_se_","&lt;/s&gt;")
-  pair_to_accept=pair_to_accept.replace("_ss_","&lt;s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
 
   $$("cur_repl_display").innerHTML=pair_to_accept
 
