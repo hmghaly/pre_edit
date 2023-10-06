@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>original</th><th>final</th><th>edited</th></tr></thead>
+    <tbody id="data_display_table_body"><tr class="table-light" name="word/document.xml|f36bd134d2"><td>General Assembly</td></tr><tr class="table-dark text-dark" name="word/document.xml|e8a3c97c94"><td>Security Council</td></tr><tr class="table-light" name="word/document.xml|6a75a8ab79"><td>Seventy-seventh session</td></tr><tr class="table-dark text-dark" name="word/document.xml|d9f5a3456d"><td>Agenda items 30, 58, 64, 66, 68, 73, 84 and 132</td></tr><tr class="table-light" name="word/document.xml|85462d314f"><td>Prevention of armed conflict</td></tr><tr class="table-dark text-dark" name="word/document.xml|e70f45356f"><td>Peacebuilding and sustaining peace</td></tr><tr class="table-light" name="word/document.xml|a8a2dd7f74"><td>Promotion and protection of the rights of children</td></tr><tr class="table-dark text-dark" name="word/document.xml|1f44ac3667"><td>Elimination of racism, racial discrimination, xenophobia and related intolerance</td></tr><tr class="table-light" name="word/document.xml|7051115790"><td>Promotion and protection of human rights</td></tr><tr class="table-dark text-dark" name="word/document.xml|e3fbeb819a"><td>Responsibility of States for internationally wrongful acts</td></tr><tr class="table-light" name="word/document.xml|d4ce0531b8"><td>The rule of law at the national and international levels</td></tr><tr class="table-dark text-dark" name="word/document.xml|7c6fb0db15"><td>The responsibility to protect and the prevention of genocide, war crimes, ethnic cleansing and crimes against humanity</td></tr><tr class="table-light" name="word/document.xml|f73cc5f92b"><td>Seventy-eighth year</td></tr><tr class="table-dark text-dark" name="word/document.xml|40a21b8a0a"><td>Letter dated 14 April 2023 from the Permanent Representative of Azerbaijan</td></tr><tr class="table-light" name="word/document.xml|420b2860bb"><td>to the United Nations addressed to the Secretary-General</td></tr><tr class="table-dark text-dark" name="word/document.xml|3b907fb199"><td></td></tr><tr class="table-light" name="word/document.xml|8a40e5e217"><td>The letter from the Permanent Representative of Armenia dated 13 March 2023, which claims to be a response to the report on the recruitment of children by Armenia into armed forces and armed groups, earlier circulated at the request of Azerbaijan, is in fact another failed attempt to deny his country's responsibility for numerous gross violations of international law and human rights. The content of the letter is sustained in apparent fabrications and distortions, characteristic to Armenia's communications and statements <span id="3SUP" class="replacement automatic delete tentative" name="statements, and | statements and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and diluted with unfounded accusations and unacceptable rhetoric against Azerbaijan.</td></tr><tr class="table-dark text-dark" name="word/document.xml|a36a70b07b"><td>The letter tries to “prove” that the report is “intentionally deceptive” and “propagandistic”, that it contains no evidence or any independent and credible sources and that the external references in the report are limited only to the publications by Child Soldiers International from two decades ago. The following facts easily refute this statement.</td></tr><tr class="table-light" name="word/document.xml|4bf83d2552"><td>Thus, besides the three publications by Child Soldiers International of 2001, 2004 and 2008, the report includes the references to the concluding observations of the Committee on the Rights of the Child on the initial report of Armenia under the Convention on the Rights of the Child (2000) and the articles in Le Figaro (November 2022) and JAMnews (December 2022), which also contain photos of children participating in military trainings. Most importantly, the report basically relies on Armenian sources, such as the article in The Armenian Mirror-Spectator (September 2022) as well as the publications and photo/video materials from social networks, the links to which are placed in corresponding footnotes. In fact, out of 15 footnotes in the report, only 2 are Azerbaijan's own sources. As regards the range of the sources over time, this testifies to the consistency in the practice of recruiting child soldiers in Armenia.</td></tr><tr class="table-dark text-dark" name="word/document.xml|6537c5cbd1"><td>Plain falsifications evidenced in Armenia's letter are actually a common method of its hate-driven policy of disinformation. For example, in its response to Azerbaijan's earlier report on the use of foreign terrorist fighters and mercenaries, Armenia found nothing better than to resort to similar insinuations. While that report contained multiple references to non-Azerbaijan sources, including Armenian ones and the publications in Le Figaro, Radio France International, France 24, Libération, Associated Press, Reuters, EU Reporter, Los Angeles Times, The Moscow Times and others, Armenia inexplicably stated that the report did not cite a single independent and credible source. The very fact of such obvious contradictions and fabrications completely negates all attempts of Armenia to resist the impeccable arguments and evidence presented by Azerbaijan.</td></tr><tr class="table-light" name="word/document.xml|60f87b9dd5"><td>Azerbaijan does not label individuals as terrorists or mercenaries without proof, as Armenia claims. Armenia has a long-standing track record of supporting and using terrorism at the State level. Since the late 1980s, Armenia and a number of terrorist organizations under its direction and control committed numerous terrorist acts against Azerbaijan, including in the capital city of Baku, killing thousands of the citizens of my country. For nearly 30 years, the territories of Azerbaijan formerly occupied by Armenia have been a zone of presence and activities of infiltrated terrorist, mercenary and other armed groups, accumulation and proliferation of uncontrolled armaments and military equipment and interpenetration of the occupants and terrorists with organized crime.</td></tr><tr class="table-dark text-dark" name="word/document.xml|ae0802d08b"><td>During the hostilities in the fall of 2020, Armenia again relied on foreign terrorist fighters and mercenaries from Europe, the Middle East and North America. The Armenian diaspora, operating under the disguise of charity organizations and non-governmental organizations, was actively engaged in facilitating the recruitment and transfer process, raising funds and collecting other material means to support the aggression against Azerbaijan.</td></tr><tr class="table-light" name="word/document.xml|79d83550e1"><td>In its letter, Armenia further argued that Azerbaijan's true purpose in submitting the report on the recruitment of child soldiers in Armenia is allegedly to divert attention from its own record of the same conduct. However, Armenia presented no evidence to support this statement. On the contrary, an attempt to attribute to Azerbaijan the “systematic practice of recruiting individuals who have not attained the minimum age of 18 into the armed forces” on the grounds that 17-year-old military cadets are considered members of the armed forces only reveals incompetence of the storytellers in Armenia.</td></tr><tr class="table-dark text-dark" name="word/document.xml|afed0efcbd"><td>Thus, according to article 3 of the Optional Protocol to the Convention on the Rights of the Child on the involvement of children in armed conflict, the States parties, by ensuring the relevant safeguards provided in the treaty, may permit voluntary recruitment into their national armed forces of persons under the age of 18. Upon its accession to the Optional Protocol, Azerbaijan, like other States parties to this instrument, made a declaration pursuant to article 3, stating that, “in accordance with the Law of the Republic of Azerbaijan on the military service of 3 November 1992, the citizens of the Republic of Azerbaijan and other persons, who are meeting the defined requirements of the military service, may voluntarily enter and be admitted in age of 17 the active military service of the cadets military school”. The declaration further emphasized that “the legislation of the Republic of Azerbaijan guarantees that this service shall not be forced or coerced, shall be realized on the basis of deliberative consent of the parents and the legal representatives of those persons, that those persons shall be provided with the full information of the duties regarding this service, and that the documents certifying their age shall be required before the admission to the service in the national armed forces”. None of the States parties objected to this declaration, which was made in full compliance with the object and purpose of the Optional Protocol.</td></tr><tr class="table-light" name="word/document.xml|8d7959c1d9"><td>Unlike Azerbaijan and a number of other States parties to the Optional Protocol, Armenia, in its declaration under article 3, stated that it “guarantees that those citizens who have not yet attained the age of 18 cannot be called upon for either obligatory or contractual (voluntary) military service”. Consequently, Armenia is in breach of the Optional Protocol, as it uses children under the age of 18 in its armed forces and armed groups, and its grandiloquent pronouncements of strong support for the goals, objectives and principles of child protection are hollow rhetoric.</td></tr><tr class="table-dark text-dark" name="word/document.xml|72830c9599"><td>Other allegations contained in Armenia's letter are equally fallacious. Thus, it is ironic to hear accusations of hatred and discrimination on ethnic grounds from mono-ethnic Armenia, where the dehumanization of Azerbaijanis is so prevalent that anti-Azerbaijani stereotypes are taught to Armenian children in school from an early age and have expanded into a widely accepted view that Azerbaijanis are ethnically incompatible with Armenians.</td></tr><tr class="table-light" name="word/document.xml|20244a4525"><td>Therefore, it is not surprising that the Government of Armenia considers ethnonationalist hate armed groups Voxj Mnalu Arvest ( <span id="SRMM" class="replacement automatic replace tentative" name="Art | art."><span class="from_repl from_initial">Art</span> <span class="to_repl to_initial">art.</span></span> of Survival) (“VoMA”) and Statehood as a National Value (“POGA”) as “non-governmental organizations engaged in nothing more than self-defence preparedness, education and training”. However, this ignores entirely the record of evidence demonstrating that these groups intentionally stoke ethnic hatred against Azerbaijanis by demonizing and dehumanizing them, denying their very existence as a distinct ethnic group and referring to them as “cannibalistic and mean-spirited” and a people “with a nomad mentality”. These groups also explicitly advocate and broadcast the teachings of Garegin Nzhdeh, who was a Nazi collaborator and founder of the racist “Tseghakron” ideology, which is based on the notion of Armenian blood purity and superiority and which espouses the racial inferiority of Azerbaijanis and seeks to unify all Armenians within a single, mono-ethnic State. The calls from these groups for liquidating Azerbaijan are definitely not self-defence.</td></tr><tr class="table-dark text-dark" name="word/document.xml|f8d37d8f08"><td>Armenia claims that it “effectively repudiated” “blatant mischaracterization” of these groups by Azerbaijan during the deliberations in the International Court of Justice in October 2021. If it were so, then the International Court of Justice, at the request of Azerbaijan, would not have ordered Armenia, on 7 December 2021, to “take all necessary <span id="TWWQ" class="replacement automatic delete tentative" name="necessary measures to | necessary to"><span class="from_repl from_initial">measures</span> <span class="to_repl to_initial"></span></span> to prevent the incitement and promotion of racial hatred, including by organizations and private persons in its territory, targeted at persons of Azerbaijani national or ethnic origin”.</td></tr><tr class="table-light" name="word/document.xml|3cc71dc50a"><td>Armenia defies the order of the International Court <span id="BIGV" class="replacement automatic delete tentative" name="Court of Justice and | Court and"><span class="from_repl from_initial">of Justice</span> <span class="to_repl to_initial"></span></span> and allows racist paramilitary organizations to operate on its territory, raise funds, openly spread anti-Azerbaijani hate speech and recruit and train Armenian civilians, including children, for war.</td></tr><tr class="table-dark text-dark" name="word/document.xml|bfccb5a54c"><td>As we have repeatedly stated before, Armenia's recurring claims about “the large-scale military hostilities unleashed by Azerbaijan” in 2020 is a sheer fantasy. Azerbaijan used a <span id="4223" class="replacement automatic replace tentative" name="counter-force | counterforce"><span class="from_repl from_initial">counter-force</span> <span class="to_repl to_initial">counterforce</span></span> to restore its territorial integrity and protect its people, acting exclusively on its sovereign soil, in full conformity with the Charter <span id="J4YC" class="replacement automatic delete tentative" name="Charter of the United Nations, | Charter,"><span class="from_repl from_initial">of the United Nations</span> <span class="to_repl to_initial"></span></span> , international law and Security Council resolutions 822 (1993), 853 (1993), 874 (1993) and 884 (1993). Azerbaijan fought not against a fictitious entity or civilian residents, as Armenia falsely claims, but against the regular armed forces of Armenia, as well as terrorist and mercenary formations under its command and control, deployed in the then-occupied territories of Azerbaijan. Thus, according to the official figures from the Government of Armenia, losses among its military personnel amounted to about 4,000 killed, and all of them on the sovereign territory of Azerbaijan.</td></tr><tr class="table-light" name="word/document.xml|ad34b4a7e5"><td>As to the clashes in September 2022, which Armenia wrongly argues to be an attack against it, they occurred along the undelimited border and were provoked by the armed forces of Armenia, as was properly documented and reported to the United Nations.</td></tr><tr class="table-dark text-dark" name="word/document.xml|9c0628a74a"><td>The armed forces of Azerbaijan strictly complied with the rules and customs of war and did not target civilian objects unless they were used for military purposes. At the same time, Azerbaijan has taken concrete steps to investigate and prosecute alleged breaches of international humanitarian law.</td></tr><tr class="table-light" name="word/document.xml|d47ea9a81d"><td>As far as Armenia's own conduct is concerned, the extensive details as to numerous atrocity crimes committed by its forces, agents, officials and other persons under its direction and control are contained in our relevant reports and communications submitted to the Secretary-General. There are also abundant sources, consisting of the documents of international organizations and the findings of independent investigations by foreign journalists, human rights activists and international non-governmental organizations, which reported on the gravity of these crimes.</td></tr><tr class="table-dark text-dark" name="word/document.xml|401d1e2ce6"><td>No matter how inventive the storytellers in Armenia are, they cannot conceal the fact that, only during the 44-day war in 2020, direct and indiscriminate missile and artillery attacks by the armed forces of Armenia that struck Azerbaijani cities and districts outside of the theatre of active hostilities, with the use of cluster bombs, ballistic missiles, unguided artillery rockets and large-calibre artillery projectiles, killed 101 civilians, including 12 children and 28 women, and injured over 450 civilians. Almost 84,000 Azerbaijanis were forced to leave the cities and villages that were shelled, and 12,000 civilian infrastructure facilities, including individual houses, were destroyed or seriously damaged on the territory of Azerbaijan. Hospitals, first-aid posts, ambulance services, schools, kindergartens, religious sites and cultural monuments were also damaged or destroyed.</td></tr><tr class="table-light" name="word/document.xml|d6be733f16"><td>While projecting itself as a proponent of human rights, Armenia continues to deny its responsibility for these offences and refuses to bring the perpetrators to justice and to offer an appropriate remedy or redress for its breaches. On the contrary, pervasive impunity encourages new hate crimes.</td></tr><tr class="table-dark text-dark" name="word/document.xml|0ccef24b6c"><td>The most recent example of outrageous contempt for the norms of law and human rights is the gruesome video footage of the brutal beating of Azerbaijani soldier Huseyn Akhundov while lying on the ground in handcuffs, released yesterday by Armenian media outlets. He and another Azerbaijani serviceman, Agshin Babirov, were captured in Armenia after being lost on 10 April 2023 in inclement weather conditions near the undelimited border of Azerbaijan and Armenia. Under its relevant international obligations, Armenia must immediately release our servicemen and properly investigate and punish those responsible for inhuman and degrading treatment against them. Thus, the Office for Democratic Institutions and Human Rights of the Organization for Security and Cooperation in Europe stated that “the footage of the apparent ill-treatment of an Azerbaijani soldier in Armenia is deeply troubling and the incident should be immediately investigated, helping to ensure accountability for those responsible in line with international law standards”.</td></tr><tr class="table-light" name="word/document.xml|0996efcaf6"><td>Another ridiculous statement in Armenia's aforementioned letter is about the alleged “expansionist goals” of Azerbaijan in the region. This allegation is worthless as it totally ignores the 30-year occupation by Armenia of the territories of Azerbaijan and its ruinous consequences and it was Azerbaijan that, right after the end of the conflict, extended the hand of peace and initiated the process of normalizing relations between the two States based on mutual recognition and respect for each other's sovereignty and territorial integrity within their internationally recognized borders. In its turn, despite the broad international support for this initiative and the efforts made to move it forward, Armenia continues to disregard its international obligations by refusing to completely withdraw its armed forces from the areas of Azerbaijan where the peacekeepers are temporarily deployed, occupying eight border villages of Azerbaijan, pursuing the policy of hatred and territorial claims and resorting to mine terrorism and other destabilizing actions.</td></tr><tr class="table-dark text-dark" name="word/document.xml|0ec871b42b"><td>With regard to human rights, Armenia should first take a good look at itself, rather than groundlessly blame others. The crackdown on opposition, the persecution of political opponents, politically motivated killings, attacks on human rights defenders and civil society, violence against women and children, widespread domestic violence, systemic corruption, limited freedom of the media and interference in the judiciary are bitter realities in today's Armenia. It is outrageous that a country in which international terrorists, war criminals and racist ideologues are national heroes tirelessly and profusely talks about human rights and democracy.</td></tr><tr class="table-light" name="word/document.xml|3e38facb39"><td>Armenia's claims of a “blockade” of the Lachin-Khankandi road and its “detrimental effect” on children are also false and misleading. There are no impediments whatsoever that Azerbaijan would apply to the functioning of the road and that would negatively affect the local residents of its Garabagh region, including their right to education. Residents, ambulances, humanitarian convoys and the International Committee of the Red Cross continue using the road without any restrictions. Thus, as of 9 April 2023, since 12 December 2022, 6,646 vehicles have passed freely through the road, most of them large trucks carrying foodstuff, medicines and other supplies to Khankandi. Only between 1 and 9 April 2023, 851 vehicles passed through the road in both directions.</td></tr><tr class="table-dark text-dark" name="word/document.xml|b2fedadb28"><td>Whatever the amount of falsehood, insinuations and disinformation disseminated by Armenia, Azerbaijan is firm in its determination to rehabilitate, reconstruct and reintegrate its conflict-affected territories, ensure a safe a dignified return of refugees and internally displaced persons to their homes, advance the normalization agenda and prevent and eliminate by all legitimate means any threats to the safety and well-being of its people and the State's sovereignty and territorial integrity.</td></tr><tr class="table-light" name="word/document.xml|91faec219b"><td>I should be grateful if you would have the present letter circulated as a document of the General Assembly, under agenda items 30, 58, 64, 66, 68, 73, 84 and 132, and of the Security Council.</td></tr><tr class="table-dark text-dark" name="word/document.xml|4d376b91c1"><td>(Signed) Yashar Aliyev</td></tr><tr class="table-light" name="word/document.xml|d9964f00a7"><td>Ambassador</td></tr><tr class="table-dark text-dark" name="word/document.xml|e9264608de"><td>Permanent Representative</td></tr><tr class="table-light" name="word/document.xml|28946ad53a"><td></td></tr><tr class="table-dark text-dark" name="word/header3.xml|db810c20bc"><td>United Nations</td></tr><tr class="table-light" name="word/header3.xml|68567ab15f"><td>A/77/853-S/2023/275</td></tr><tr class="table-dark text-dark" name="word/header3.xml|7fa367f90b"><td></td></tr><tr class="table-light" name="word/header3.xml|263f1f5c85"><td>General Assembly</td></tr><tr class="table-dark text-dark" name="word/header3.xml|cf729f3300"><td>Security Council</td></tr><tr class="table-light" name="word/header3.xml|54b8867cd5"><td>Distr.: General</td></tr><tr class="table-dark text-dark" name="word/header3.xml|b3be11fd9b"><td>18 April 2023</td></tr><tr class="table-light" name="word/header3.xml|c6ac6d9d74"><td>Original: English</td></tr><tr class="table-dark text-dark" name="word/footer2.xml|fbb164bb42"><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-light" name="word/footnotes.xml|e4f5c6e7a4"><td>A/77/798-S/2023/191.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|db6835150e"><td>Annex to the Letter dated 26 January 2023 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/77/714-S/2023/62.</td></tr><tr class="table-light" name="word/footnotes.xml|2bce8b1995"><td>Footnotes 7 and 9.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|d8c9594ce7"><td>Report on the use of foreign terrorist fighters by the Republic of Armenia in its recent aggression against the Republic of Azerbaijan, annex to the Letter dated 18 November 2020 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/75/625-S/2020/1161.</td></tr><tr class="table-light" name="word/footnotes.xml|74e5092dd1"><td>Letter dated 9 March 2021 from the Permanent Representative of Armenia to the United Nations addressed to the Secretary-General, A/75/807-S/2021/244.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|8d8b5527ad"><td>See, e.g., Information provided by the Ministry of Foreign Affairs of Azerbaijan on the organization and implementation by Armenia of terrorist activities against Azerbaijan, annex to the Letter dated 13 November 1995 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/C.6/50/4; Information provided by the Ministry of Foreign Affairs of Azerbaijan on measures to eliminate international terrorism, annex to the Note verbale dated 8 November 1996 from the Permanent Mission of Azerbaijan to the United Nations addressed to the Secretary-General, A/C.6/51/5; Information on some facts testifying to the organization and implementation by Armenia of terrorist acts against Azerbaijan, annex to the Letter dated 9 May 2012 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/66/796-S/2012/308; Letter dated 5 October 2020 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/75/497-S/2020/982.</td></tr><tr class="table-light" name="word/footnotes.xml|273c8cb3a8"><td>See, e.g., the reports of the Secretary-General on conventional arms control at the regional and subregional levels, A/67/129/Add.1 and A/68/133/Add.1.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|81b5729c0e"><td>Report on illegal economic and other activities in the occupied territories of Azerbaijan, annex to the letter dated 15 August 2016 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/70/1016-S/2016/711.</td></tr><tr class="table-light" name="word/footnotes.xml|7cc3dc1a6a"><td>Report on the use of foreign terrorist fighters by the Republic of Armenia in its recent aggression against the Republic of Azerbaijan, annex to the Letter dated 18 November 2020 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/75/625-S/2020/1161; Updated report on Armenia's abuse of non-profit organizations and charity entities for corruption, money-laundering and terrorist financing purposes, annex to the Letter dated 3 February 2022 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/76/680-S/2022/92.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|c3ce161fd7"><td>United Nations Treaty Collection, Optional Protocol to the Convention on the Rights of the Child on the involvement of children in armed conflict, New York, 25 May 2000, Status as of 14 April 2023, https://treaties.un.org/Pages/ViewDetails.aspx?src=TREATY&mtdsg_no=IV-11-b&chapter=4&clang=_en#EndDec.</td></tr><tr class="table-light" name="word/footnotes.xml|d2804861c8"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|531a9db0de"><td>Oral statements by Azerbaijan in the International Court of Justice on its request for the indication of provisional measures in the case concerning Application of the International Convention on the Elimination of All Forms of Racial Discrimination (Azerbaijan v. Armenia), 18–19 October 2021, available at https://www.icj-cij.org/sites/default/files/case-related/181/181-20211018-ORA-01-00-BI.pdf (pp. 40–51) and https://www.icj-cij.org/sites/default/files/case-related/181/181-20211019-ORA-01-00-BI.pdf (pp. 21–23).</td></tr><tr class="table-light" name="word/footnotes.xml|22bbae6f35"><td>Application of the International Convention on the Elimination of All Forms of Racial Discrimination (Azerbaijan v. Armenia), Provisional Measures, Order of the International Court of Justice of 7 December 2021, available at</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|db8e13a253"><td>https://www.icj-cij.org/sites/default/files/case-related/181/181-20211207-ORD-01-00-EN.pdf.</td></tr><tr class="table-light" name="word/footnotes.xml|437e38fbc0"><td>See, e.g., the Letter dated 8 February 2023 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/77/726-S/2023/98.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|0f31128a38"><td>See, e.g., “Pashinyan says about 4,000 Armenian troops killed in Nagorno-Karabakh”, 14 April 2021, https://tass.com/world/1277921.</td></tr><tr class="table-light" name="word/footnotes.xml|cbf5fe412f"><td>Statement of the Ministry for Foreign Affairs of Azerbaijan, 13 September 2022, annex to the Letter dated 13 September 2022 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/77/337-S/2022/690; Letter dated 13 September 2022 from the Minister for Foreign Affairs of Azerbaijan addressed to the Secretary-General, annex to the Letter dated 13 September 2022 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/77/338-S/2022/691; Statement by the Permanent Representative of Azerbaijan to the United Nations at the 9132nd meeting of the Security Council, 15 September <span id="AA1I" class="replacement automatic delete tentative" name="September 2022, | September,"><span class="from_repl from_initial">2022</span> <span class="to_repl to_initial"></span></span> , S/PV.9132, pp. 13–16.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|a1bad0c48c"><td>See, e.g., Report on war crimes in the occupied territories of the Republic of Azerbaijan and the Republic of Armenia's responsibility, annex to the letter dated 3 February 2020 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/74/676-S/2020/90. See also the Letter dated 2 March 2022 from the Minister for Foreign Affairs of Azerbaijan addressed to the Secretary-General, annex to the Letter dated 2 March 2022 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/76/736-S/2022/176; and the Letter dated 13 January 2023 from the Permanent Representative of Azerbaijan to the United Nations addressed to the Secretary-General, A/77/695-S/2023/34.</td></tr><tr class="table-light" name="word/footnotes.xml|c1c7520576"><td>See, e.g., A/75/357-S/2020/948; A/75/379-S/2020/965; A/75/486-S/2020/969; A/75/487-S/2020/973; A/75/492-S/2020/977; A/75/493-S/2020/980; A/75/508-S/2020/1001; A/75/512-S/2020/1010; A/75/517-S/2020/1016; A/75/529-S/2020/1027; A/75/554-S/2020/1050; A/75/555-S/2020/1047; A/75/558-S/2020/1051; A/75/574-S/2020/1083; A/75/578-S/2020/1086; A/75/660-S/2020/1267.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|36a98c3b72"><td>https://twitter.com/osce_odihr/status/1646849062572883969?s=48&t=-3wkm6P8CaF_Jt2m5m51_g.</td></tr><tr class="table-light" name="word/footer1.xml|bad1bf5d06"><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr></tbody>
+  </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>        
+      </div>
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+

@@ -115,7 +115,6 @@ def process():
         #posted_data=posted_data.decode("utf-8")
         #cur_dict={"request_type":"POST"}
         #request.data
-
         #cur_dict["data"]=posted_data_dict
         cur_dict["time"]=time.ctime()
         cur_dict["action"]="processed"
