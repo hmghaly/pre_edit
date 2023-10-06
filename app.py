@@ -102,7 +102,8 @@ def process():
         #new_edit_pre_edit_list,all_repl_inst_list,analysis_dict=analyze_pre_edit_docx(cur_docx_path,loaded_model=None,refined_first_token_dict,pred_threshold=0.3)
         #new_edit_pre_edit_list,all_repl_inst_list,analysis_dict=analyze_pre_edit_docx(cur_docx_path,None,no_context_first_token_dict,pred_threshold=0.3)
         new_edit_pre_edit_list,all_repl_inst_list,analysis_dict=analyze_pre_edit_docx(cur_docx_path,loaded_model,refined_first_token_dict,pred_threshold=0.3)
-        new_edit_list=[(v[1],v[4],v[-1]) for v in new_edit_pre_edit_list]
+        #new_edit_list=[(v[1],v[4],v[-1]) for v in new_edit_pre_edit_list]
+        new_edit_list=[(v[0],v[-1]) for v in new_edit_pre_edit_list]
         cur_docx_fname=os.path.split(cur_docx_path)[-1]
         cur_html_fname=cur_docx_fname.replace(".docx",".html")
         if not cur_html_fname.endswith(".html"): cur_html_fname+=".html"
