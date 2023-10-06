@@ -90,7 +90,6 @@ def process():
     #cur_dict={"request_type":"generic"}
 
     cur_dict={}
-    
     #cur_dict=dict(request.form)
     if request.method == 'POST':
         posted_data=request.data.decode("utf-8")
@@ -114,7 +113,7 @@ def process():
         cur_dict["cur_html_fpath"]=cur_html_fpath
         #posted_data=posted_data.decode("utf-8")
         #cur_dict={"request_type":"POST"}
-        #request.data
+        #request.data 
         #cur_dict["data"]=posted_data_dict
         cur_dict["time"]=time.ctime()
         cur_dict["action"]="processed"
