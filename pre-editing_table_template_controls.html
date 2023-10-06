@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>Output</th></tr></thead>
+    <tbody id="data_display_table_body"><tr class="table-light" name="word/document.xml|646380d6ed"><td>SG Report on the Work of the Organization 2023 – for DGACM editing – Draft 6 (ii)</td></tr><tr class="table-dark text-dark" name="word/document.xml|d7886b6174"><td>3 chapters</td></tr><tr class="table-light" name="word/document.xml|961b8bbc31"><td>Peace & Security</td></tr><tr class="table-dark text-dark" name="word/document.xml|7e41b2064f"><td>Humanitarian Assistance</td></tr><tr class="table-light" name="word/document.xml|b7a2e5f946"><td>Drugs, Crime & Terrorism</td></tr><tr class="table-dark text-dark" name="word/document.xml|0cf77c9522"><td>Peace & Security</td></tr><tr class="table-light" name="word/document.xml|7a40820e6f"><td>CONTEXT</td></tr><tr class="table-dark text-dark" name="word/document.xml|1d6c05b8d1"><td>Peace and security are threatened by the evolving nature of conflict, shrinking civic space, mis/disinformation, hate speech, unregulated cyberspace, the climate emergency, and the rollback of women's rights. We also see the highest levels of geostrategic competition in decades. While these trends have been present for some time, the war in Ukraine has sharpened global divisions among Member States. This environment undermines the effectiveness of the global peace and security architecture, while challenging our ability to prevent, manage and mitigate conflicts and assist with peace agreements. To chart a path forward, we need a renewed commitment to multilateralism and the United Nations <span id="94EL" class="replacement automatic delete tentative" name="Nations Charter _, | Nations _,"><span class="from_repl from_initial">Charter</span> <span class="to_repl to_initial"></span></span> , as called for in the UN75 Declaration and my report on Our Common Agenda. My proposal for a New Agenda for Peace outlines a vision for multilateral action for peace and security.</td></tr><tr class="table-light" name="word/document.xml|214a7308be"><td>KEY OBJECTIVES</td></tr><tr class="table-dark text-dark" name="word/document.xml|9d91566746"><td>We support Member States with a range of activities for international peace and security, grounded in the principles of the Charter and the mandates of the General Assembly and the Security Council. Our political, peacemaking, peacebuilding <span id="JT8A" class="replacement automatic delete tentative" name="peacebuilding _, and | peacebuilding and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and peacekeeping efforts aim to prevent and manage conflicts, respond to political crises <span id="2350" class="replacement automatic delete tentative" name="crises _, and | crises and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and address emerging threats. We also work to advance women's and youth's participation in political and peace processes <span id="3SUP" class="replacement automatic delete tentative" name="processes _, and | processes and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and to prevent and address conflict-related sexual violence, violations of children's rights in armed conflict, sexual exploitation and abuse, as well as genocide and atrocity crimes more generally.</td></tr><tr class="table-light" name="word/document.xml|09b416cee0"><td>KEY OUTCOMES</td></tr><tr class="table-dark text-dark" name="word/document.xml|4a190de28e"><td>Prevention, management and resolution of conflicts</td></tr><tr class="table-light" name="word/document.xml|e1cedb3ecb"><td>As global peace and security deteriorate, we increased our efforts to prevent, manage and resolve conflicts and promote sustainable peace, including through 41 special political missions and offices and 12 peacekeeping operations. The Secretary-General's special representatives and envoys worked with conflict parties to achieve ceasefires and political settlements. In Yemen, a United Nations-brokered truce delivered tangible benefits to the Yemeni people and enabled the parties to discuss the de-escalation of hostilities. In Libya, we supported inclusive consultations with stakeholders on overcoming the protracted political impasse and holding national elections. In Lebanon, our peacekeeping mission supported stability, including with support to a regular tripartite forum. In Abyei, we assisted efforts to improve intercommunal relations. The United Nations mission in Colombia expanded its peacebuilding support as requested by the new Government and accompanied the resumed peace talks between the Government and the National Liberation Army. In the Central African Republic, we supported the Government-led peace process that contributed to dialogue and the dissolution of armed groups.</td></tr><tr class="table-dark text-dark" name="word/document.xml|2948854bb3"><td>In the ongoing Ukraine conflict, the United Nations not only stayed and delivered, but also rapidly scaled up a response across the country and beyond, including a refugee response. In view of severe access constraints in areas in the east and south of Ukraine, we consistently advocated for access while respecting Ukraine's sovereignty, independence, and territorial integrity in accordance with international law. The United Nations also continued to work with all concerned to mitigate the global impacts of the crisis. To ease global impacts on food and fertilizers, we actively engaged in negotiating and facilitating implementation of the Black Sea Grain Initiative, which was signed by Türkiye, the Russian Federation and Ukraine in July 2022. We also signed a Memorandum of Understanding with the Russian Federation to facilitate the transparent unimpeded access of food and fertilizers, including the raw materials required to produce fertilizers. As the war continues unabated, the United Nations will maintain efforts toward preventing further escalation and promoting a just and sustainable peace, in line with the United Nations <span id="HYPG" class="replacement automatic delete tentative" name="Nations Charter _, | Nations _,"><span class="from_repl from_initial">Charter</span> <span class="to_repl to_initial"></span></span> , international law, and relevant General Assembly resolutions.</td></tr><tr class="table-light" name="word/document.xml|cc6c51e464"><td>Our partnerships with regional organizations remained essential. Following the October 2021 coup in <span id="CJ6U" class="replacement automatic insert tentative" name="in Sudan | in the Sudan"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the</span></span> Sudan, our joint efforts with the African Union and the Intergovernmental Authority on Development resulted in a Sudanese-led political process. This process ultimately produced a Framework Political Agreement and laid the groundwork for a political settlement. In South Sudan, we worked with regional and subregional organizations to advance the political process. In the Democratic Republic of the Congo and the Great Lakes region, we worked with the African Union and regional partners on implementing the Peace, Security, and Cooperation Framework.</td></tr><tr class="table-dark text-dark" name="word/document.xml|8359fb4ef4"><td>United Nations peacekeeping adapted to challenging environments through the Secretary-General's Action for Peacekeeping initiative and the Action for Peacekeeping Plus strategy. We responded to the increase in peacekeeper fatalities from malicious acts with improved training, equipment, medical trauma care, improvised explosive devices detection, and strengthening the <span id="9PEG" class="replacement automatic replace tentative" name="defense | defence"><span class="from_repl from_initial">defense</span> <span class="to_repl to_initial">defence</span></span> of our bases in the field.</td></tr><tr class="table-light" name="word/document.xml|799b9b9bec"><td>We increased efforts to address mis/disinformation and hate speech through better monitoring, analysis, guidance, training <span id="VQLC" class="replacement automatic delete tentative" name="training _, and | training and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and proactive communication and advocacy. We also built new partnerships to scale up this work, including with governments, regional organizations, civil society <span id="688E" class="replacement automatic delete tentative" name="society _, and | society and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and social media companies. Our missions in the Democratic Republic of the Congo and Lebanon used social media to better explain their mandates. In the Central African Republic, we helped train media organizations on the peace process and mis/disinformation. In Libya, we assisted initiatives to counter mis/disinformation and hate speech during elections, while supporting the participation of women. In the Horn of Africa region, we organized a multistakeholder workshop on hate speech and mis/disinformation. In Kosovo, we worked to reduce divisive ethnic narratives with human rights education.</td></tr><tr class="table-dark text-dark" name="word/document.xml|9817fe730a"><td>We also continued to support Member States and their populations in non-mission settings. In West Africa and the Sahel, we worked with regional partners to support political transitions in Burkina Faso and Guinea and to address transboundary threats, including violent extremism and the impacts of climate change on peace and security. In Papua New Guinea, we supported parties in advancing agreement on Bougainville's future through the Bougainville Peace Process.</td></tr><tr class="table-light" name="word/document.xml|e5352301b6"><td>Our peacekeeping operations and special political missions continued to support their host countries in protecting civilians. To adapt to new challenges, our missions tested digital technologies for better situational awareness, analysis <span id="6BL6" class="replacement automatic delete tentative" name="analysis _, and | analysis and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and early warning to help <span id="2640" class="replacement automatic insert tentative" name="help prevent | help to prevent"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">to</span></span> prevent violence against civilians. In Mali, our expanded digital mapping tools helped us improve the impact of our military and police patrols. In the Central African Republic, new apps allowed us to respond more proactively and robustly to alerts. In <span id="YGPF" class="replacement automatic insert tentative" name="In Sudan | In the Sudan"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the</span></span> Sudan, we supported the implementation of a broader national strategy to better protect civilians. We also stepped up our work to prevent harm to civilians from our own military and police in all missions.</td></tr><tr class="table-dark text-dark" name="word/document.xml|4eac699b0c"><td>Women, Peace and Security</td></tr><tr class="table-light" name="word/document.xml|381604adcf"><td>Strengthening women's full, equal <span id="OWIA" class="replacement automatic delete tentative" name="equal _, and | equal and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and meaningful participation in peace and political processes and decision-making is a core priority for us. In <span id="TSXP" class="replacement automatic insert tentative" name="In Sudan | In the Sudan"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the</span></span> Sudan, we supported consultations with women-led groups and political leaders which contributed to the inclusion of women's rights provisions in the Framework Agreement. For the first time, 15 per cent of the signatories were women. In the Central African Republic, Colombia, the Democratic Republic of the Congo, Mali <span id="Y0IR" class="replacement automatic delete tentative" name="Mali _, and | Mali and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and South Sudan our missions worked to increase women's participation in local peace committees, regional peace processes <span id="RIOU" class="replacement automatic delete tentative" name="processes _, and | processes and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and decision-making bodies.</td></tr><tr class="table-dark text-dark" name="word/document.xml|4ad4b2dee6"><td>In the Democratic Republic of the Congo, we supported the integration of the women, peace and security agenda into the Transition Plan, which resulted in increasing women's participation in the Nairobi Peace Process to 40 per cent of 110 civil society organizations. Our work also contributed to temporary special measures in the electoral code to mobilize nomination of women candidates. To improve women's safety and security, we carried out conflict mapping, early warning and analysis <span id="YZMS" class="replacement automatic delete tentative" name="analysis _, and | analysis and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and deployed mixed engagement teams and gender-responsive patrols.</td></tr><tr class="table-light" name="word/document.xml|3409ee6701"><td>We supported women's participation in peace and political processes in Iraq, Libya, <span id="8EVO" class="replacement automatic insert tentative" name="_, Sudan | _, the Sudan"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the</span></span> Sudan, <span id="EKI0" class="replacement automatic replace tentative" name="Syria | the Syrian Arab Republic"><span class="from_repl from_initial">Syria</span> <span class="to_repl to_initial">the Syrian Arab Republic</span></span> , and Yemen. Our work helped promote women's representation in delegations, consultations with women's civil society organizations <span id="AGPA" class="replacement automatic delete tentative" name="organizations _, and | organizations and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and innovative inclusivity mechanisms. In Afghanistan, we assisted in-country efforts to facilitate engagement between Afghan women and de facto authorities.</td></tr><tr class="table-dark text-dark" name="word/document.xml|b8eb01624e"><td>Together with partners, we convened digital dialogues to engage women's voices on peace and security, including in Bolivia <span id="9TR4" class="replacement automatic insert tentative" name="Bolivia _, | Bolivia (_ Plurinational State of _)_ _,"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">(Plurinational State of)</span></span> , Haiti, Lebanon <span id="1UNK" class="replacement automatic delete tentative" name="Lebanon _, and | Lebanon and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and Libya as well as in Northeast Asia and the Middle East and North Africa regions.</td></tr><tr class="table-light" name="word/document.xml|6a8934a43d"><td>The Women's Peace and Humanitarian Fund mobilized over $44 million to support 300 women's rights organizations and partners from 32 countries. Our Elsie Initiative Fund continues to support uniformed women in peace operations. We also launched a new funding mechanism for women human rights defenders.</td></tr><tr class="table-dark text-dark" name="word/document.xml|c8bb9c490a"><td>By February 2023, over 40 per cent of civilian heads and deputy heads of our missions were women. We also met and exceeded our targets for gender parity among uniformed personnel, except in military contingents, where women are still starkly underrepresented.</td></tr><tr class="table-light" name="word/document.xml|7fa109ff24"><td>Peacebuilding support</td></tr><tr class="table-dark text-dark" name="word/document.xml|1d559e0e15"><td>In 2022, the Secretary-General's Peacebuilding Fund approved a record $231 million to support peacebuilding projects in 37 countries. More than a third of these funds supported women and youth empowerment. Other priorities included regional, cross-border and transition support in over 30 conflict-affected and fragile settings. We joined up with regional organizations on such plans, including with the League of Arab States. Recognizing that peacebuilding remains underfunded, the General Assembly adopted a resolution to improve financing for peacebuilding in the future.</td></tr><tr class="table-light" name="word/document.xml|613420bb81"><td>The Peacebuilding Commission broadened its geographic scope and inclusion. The Commission now supports 14 countries and regions, and for the first time, it discussed priorities in Central Asia, South Sudan <span id="V060" class="replacement automatic delete tentative" name="Sudan _, and | Sudan and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and Timor-Leste. Nearly 30 civil society representatives attended commission meetings – a new record.</td></tr><tr class="table-dark text-dark" name="word/document.xml|4aa77ac078"><td>Electoral assistance</td></tr><tr class="table-light" name="word/document.xml|0c57bfa74b"><td>We worked with Member States across the world to help deliver credible and peaceful elections. Our technical assistance and preventive diplomacy not only supported election processes but also helped address challenges around the acceptance of results, disinformation and hate speech, and women's participation.</td></tr><tr class="table-dark text-dark" name="word/document.xml|0eb484b67a"><td>To foster youth participation in elections, we collaborated with United Nations agencies to create the first Arab Network for Youth in Elections. Together with regional organizations, we exchanged lessons learned, promoted South-South cooperation <span id="HH5J" class="replacement automatic delete tentative" name="cooperation _, and | cooperation and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and built capacity. Our partners included the League of Arab States, the Organization of Islamic Cooperation, the Southern African Development Community, and the International Conference on the Great Lakes Region.</td></tr><tr class="table-light" name="word/document.xml|d2d19fa990"><td>Rule of law and security institutions</td></tr><tr class="table-dark text-dark" name="word/document.xml|7fd70f7dc4"><td>Our support for police and rule of law institutions remained central to our peace and security work. Over 10,000 United Nations police officers in 19 missions helped strengthen national policing capacities, including through the greater use of data analytics, foresight, and behavioural science for meaningful results.</td></tr><tr class="table-light" name="word/document.xml|0c7492ab38"><td>We supported national justice institutions in prosecuting crimes against civilians. This resulted in the first convictions by the Special Criminal Court in the Central African Republic and an increase in high-profile cases in the Democratic Republic of the Congo, Mali <span id="Z4B6" class="replacement automatic delete tentative" name="Mali _, and | Mali and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and South Sudan. We also supported national corrections institutions in reinforcing the security and rehabilitation of high-risk detainees.</td></tr><tr class="table-dark text-dark" name="word/document.xml|019a6d0288"><td>Our revised standards for disarmament, demobilization and reintegration of armed groups help reduce risks. In the Central African Republic, we supported community violence reduction initiatives, which focused on the needs of at-risk youth. We also assisted national authorities with the safe storage and management of small arms and light weapons.</td></tr><tr class="table-light" name="word/document.xml|3474128115"><td>We assisted in national security sector reform, including in the Central African Republic, Democratic Republic of the Congo, Iraq, Lesotho, Libya, Mali, Somalia, South Sudan, Sudan <span id="VJSE" class="replacement automatic delete tentative" name="Sudan _, and | Sudan and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and Yemen. With our mine action services, including the removal of explosive ordnance, we made life safer for millions of people across 29 countries and territories.</td></tr><tr class="table-dark text-dark" name="word/document.xml|8f7fedc483"><td>Security Council Affairs</td></tr><tr class="table-light" name="word/document.xml|2ab70d40fe"><td>We continued to assist the Security Council in carrying out its critical responsibilities. In 2022, we supported the Security Council in organizing 292 meetings and 127 consultations. These deliberations resulted in 54 resolutions and 7 presidential statements on international peace and security. We also supported Council committees and working groups, which met 125 times, both in-person and virtually.</td></tr><tr class="table-dark text-dark" name="word/document.xml|2f7aadfdda"><td>Children and armed conflict, violence against children, conflict-related sexual violence <span id="8WM4" class="replacement automatic delete tentative" name="violence _, and | violence and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and the prevention of genocide</td></tr><tr class="table-light" name="word/document.xml|a38f35a1c4"><td>In 2022, children in conflict zones were impacted by conflict escalation, improvised explosive devices and explosive remnants of war, humanitarian crises, attacks on schools and hospitals, sexual violence, and denial of humanitarian access. Children with disabilities and those displaced were most vulnerable. We helped verify at least XX violations against children by Government and non-state forces, including terrorist groups. Together with many partners, our work contributed to the release of some XX children from armed forces and groups and to reintegration assistance.</td></tr><tr class="table-dark text-dark" name="word/document.xml|487686d0c3"><td>We drew global attention to the impacts of violence that children face before, during, and after conflict – including forced displacement, abductions, trafficking, detention <span id="O51F" class="replacement automatic delete tentative" name="detention _, and | detention and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and adoptions. We worked with Member States to strengthen violence prevention and protection. We also raised awareness about children living in camps and detention facilities that require alternative solutions. We urged States to prevent recurring cycles of violence by repatriating, rehabilitating, and reintegrating their nationals.</td></tr><tr class="table-light" name="word/document.xml|12b2b6384d"><td>Over the past year, conflict, shrinking civic space <span id="C7VM" class="replacement automatic delete tentative" name="space _, and | space and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and weakened rule of law also exposed civilians to more sexual violence. With our monitoring and reporting, we helped verify approximately 3,000 cases of conflict-related sexual violence. In Ukraine, we signed a framework agreement with the Government to address conflict-related sexual violence and an implementation plan. In addition, we launched a new global framework for the prevention of conflict-related sexual violence at the 77th General Assembly.</td></tr><tr class="table-dark text-dark" name="word/document.xml|fa6cfc71ed"><td>We monitored and raised alarm over risks of atrocity crimes and supported atrocity prevention. Our efforts resulted in action plans promoting the roles of women and traditional leaders in preventing atrocities, and the role of sports in countering hate speech. We also supported five United Nations Country Teams in developing action plans on hate speech. For the first time ever, we brought people together to commemorate an International Day for Countering Hate Speech on 18 June 2022.</td></tr><tr class="table-light" name="word/document.xml|d9858b85dd"><td>Humanitarian Assistance</td></tr><tr class="table-dark text-dark" name="word/document.xml|b345f37ed9"><td>CONTEXT</td></tr><tr class="table-light" name="word/document.xml|af9c043efe"><td>The global humanitarian situation is dire. Critical challenges compound and cascade: Protracted and new armed conflicts, the climate crisis and major disasters, record levels of displacement, hunger and the risk of famine, the continued effects of COVID-19, and the global economic slowdown. These interconnected issues impact lives and livelihoods across the globe. At the same time, violations of international humanitarian law and human rights - including attacks on civilians, humanitarian workers, and healthcare and education services - continue with impunity and disproportionately impact women and children.</td></tr><tr class="table-dark text-dark" name="word/document.xml|ffecdadae2"><td>KEY OBJECTIVES</td></tr><tr class="table-light" name="word/document.xml|5e0b9871b3"><td>The United Nations works to ensure coordinated, coherent, effective <span id="SDMU" class="replacement automatic delete tentative" name="effective _, and | effective and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and timely humanitarian responses to save lives and alleviate suffering in disasters, conflicts <span id="B3XL" class="replacement automatic delete tentative" name="conflicts _, and | conflicts and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and other emergencies. We advocate for humanitarian principles, promote respect for international humanitarian and human rights law <span id="KML0" class="replacement automatic delete tentative" name="law _, and | law and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and mobilize resources to prepare for and respond to crises with partners. Early action and rapid response, including through anticipatory approaches, remains crucial to effective coordination. The United Nations also brings governments, partners <span id="SSF6" class="replacement automatic delete tentative" name="partners _, and | partners and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and communities together to reduce disaster risk and losses.</td></tr><tr class="table-dark text-dark" name="word/document.xml|c2231ad23e"><td>KEY OUTCOMES</td></tr><tr class="table-light" name="word/document.xml|ceb95b36c9"><td>In 2022, we coordinated humanitarian response plans for 216 million people across 69 countries to ensure they receive life-saving assistance and protection. With generous support from donors, the United Nations and our partners mobilized a record $30 billion for these plans – but still 40 per cent short of the $52 billion required. At <span id="YU6G" class="replacement automatic insert tentative" name="At country | At the country"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the</span></span> country-level, our partners assisted 157 million, or 79 per cent, of the people originally targeted.</td></tr><tr class="table-dark text-dark" name="word/document.xml|569b041a78"><td>New and deteriorating crises, including in Afghanistan, Ethiopia, Somalia <span id="8203" class="replacement automatic delete tentative" name="Somalia _, and | Somalia and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and Ukraine, were the main focus of our work last year. In Ukraine, the United Nations and partners delivered humanitarian assistance and protection to over 15 million people, including $1.2 billion in unprecedented cash assistance for nearly 6 million Ukrainians. In total, we helped mobilize $5 billion for Ukraine and the region. We also helped facilitate agreement on the Black Sea Grain Initiative, which cleared the passage of grain through the Black Sea. Together with the memorandum of understanding on trade facilitation, this initiative reconnected a critical source of food and fertilizer supplies to world markets, easing pressure on global food security and ultimately helping millions of people.</td></tr><tr class="table-light" name="word/document.xml|739a6488f7"><td>The United Nations and partners continued to deliver support in Afghanistan. Over 27 million people, in particular women and girls, received humanitarian assistance and protection, including in previously inaccessible locations. In Pakistan, heavy rains and floods affected 33 million people, with 8 million people displaced. We supported the Government-led disaster response with <span id="YAEK" class="replacement automatic replace tentative" name="lifesaving | life _-_ saving"><span class="from_repl from_initial">lifesaving</span> <span class="to_repl to_initial">life-saving</span></span> and livelihoods assistance, while preventing the outbreak of communicable diseases.</td></tr><tr class="table-dark text-dark" name="word/document.xml|6ed5a53b4a"><td>Hunger and food insecurity reached record levels by the end of 2022. At least 260 million people across 58 countries and territories needed urgent food and nutrition assistance, including 37 million people at risk of starvation and 376,000 suffering from famine-like conditions.</td></tr><tr class="table-light" name="word/document.xml|0e320fe58d"><td>Responding to historic drought and risk of famine in the Horn of Africa, the United Nations and partners assisted 17 million people. In Yemen, the United Nations and partners reached over 10.5 million people every month with humanitarian support, including food for 15 million of the most vulnerable.</td></tr><tr class="table-dark text-dark" name="word/document.xml|e6ac4d81d5"><td>Our Central Emergency Response Fund and Country-Based Pooled Funds remained indispensable. Disbursing $1.83 billion, they catalyzed life-saving assistance, including in underfunded crises. A portion of these funds, $595 million, facilitated early, scaled up and sustained responses to food insecurity. In the Horn of Africa, $194 million unlocked critical cash and nutrition assistance, food, medical services, shelter <span id="O76Y" class="replacement automatic delete tentative" name="shelter _, and | shelter and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and clean water. In Afghanistan, our funds allocated $289 million to meet dire humanitarian needs.</td></tr><tr class="table-light" name="word/document.xml|d2377fd6cf"><td>In 2022, we supported Member States and partners as they began consultations for the Midterm Review of the Sendai Framework for Disaster Risk Reduction. We also facilitated thematic global dialogues to explore the interconnected nature of risk. In other work, we continued to mainstream disaster risk reduction in humanitarian action. We promoted the use of reliable risk data to better assist people who are vulnerable to the effects of climate change. These efforts enhanced the global understanding of risk drivers, vulnerability <span id="ZR8Z" class="replacement automatic delete tentative" name="vulnerability _, and | vulnerability and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and exposure. Our joined-up analytics strengthened disaster risk plans, scenarios, and financing decisions, including the United Nations Humanitarian Needs Overviews and Common Country Analysis.</td></tr><tr class="table-dark text-dark" name="word/document.xml|0fc16ff881"><td>Highlight box – The SFO Safer tanker: preventing a humanitarian and environmental catastrophe</td></tr><tr class="table-light" name="word/document.xml|2200f02189"><td>The United Nations is coordinating a global operation to remove more than a million barrels of oil from the decaying SFO Safer tanker off Yemen's Red Sea coast that threatens a humanitarian and environmental catastrophe. A major spill would devastate fishing communities on Yemen's Red Sea coast, likely wipe out 200,000 livelihoods instantly, expose whole communities to life-threatening toxins, and affect millions with polluted air. It would also result in the closure of Hodeidah and Saleef ports, which are essential to bringing food, fuel <span id="OYKS" class="replacement automatic delete tentative" name="fuel _, and | fuel and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and life-saving supplies into Yemen, where 17 million people need food assistance.</td></tr><tr class="table-dark text-dark" name="word/document.xml|fad55338ef"><td>Drugs, Crime & Terrorism</td></tr><tr class="table-light" name="word/document.xml|b5f88276f4"><td>CONTEXT</td></tr><tr class="table-dark text-dark" name="word/document.xml|6e28b1e804"><td>The compounding effects of climate change, COVID-19, political instability, war, and displacement are exacerbating drug problems, organized crime, corruption <span id="FOKZ" class="replacement automatic delete tentative" name="corruption _, and | corruption and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and terrorism, especially in crisis-settings and vulnerable areas. Links between illicit trade, financial flows, and trafficking in all its forms are a growing concern, while terrorism continues to threaten international peace and security, particularly in conflict areas where terrorists exploit fragilities.</td></tr><tr class="table-light" name="word/document.xml|e8bd2aa00e"><td>KEY OBJECTIVES</td></tr><tr class="table-dark text-dark" name="word/document.xml|3a852a6d06"><td>The United Nations supports Member States in tackling issues related to drugs, crime and terrorism. We assist in setting and implementing international standards and norms on crime prevention and criminal justice and help <span id="FJDT" class="replacement automatic insert tentative" name="help ensure | help to ensure"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">to</span></span> ensure compliance with obligations in multilateral instruments on drugs, corruption, transnational organized crime <span id="ZUYI" class="replacement automatic delete tentative" name="crime _, and | crime and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and terrorism.</td></tr><tr class="table-light" name="word/document.xml|287d3fc24c"><td>KEY OUTCOMES</td></tr><tr class="table-dark text-dark" name="word/document.xml|82893e10f2"><td>Crime prevention and countering transnational organized crime</td></tr><tr class="table-light" name="word/document.xml|350d99816b"><td>In 2022, we continued to assist Member States on criminal justice. We helped train 2,700 prison officers and criminal justice practitioners in 30 national prison services in the safe, secure <span id="MVSA" class="replacement automatic delete tentative" name="secure _, and | secure and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and humane custody of prisoners based on the Nelson Mandela Rules and the Bangkok Rules. We also provided guidance on how to correctly classify and better treat prisoners as well as on the handling of special categories of prisoners.</td></tr><tr class="table-dark text-dark" name="word/document.xml|2f55459825"><td>To counter organized crime, we helped six Member States develop their strategies and trained over 250 policymakers from 47 countries on the implementation of the United Nations Convention against Transnational Organized Crime. We assisted 29 Member States in drafting or revising firearms legislation, four countries with legislation on trafficking in persons <span id="5OYW" class="replacement automatic delete tentative" name="persons _, and | persons and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and one country with legislation on the smuggling of migrants.</td></tr><tr class="table-light" name="word/document.xml|99b486f2ba"><td>On issues related to cybercrime, we organized five intergovernmental sessions and five <span id="XTT4" class="replacement automatic replace tentative" name="multistakeholder | multi _-_ stakeholder"><span class="from_repl from_initial">multistakeholder</span> <span class="to_repl to_initial">multi-stakeholder</span></span> consultations to negotiate a draft convention on cybercrime, which is expected to be presented to the General Assembly in September 2023. We also supported 60 countries in countering and preventing cybercrime. In six countries, we helped establish digital forensic laboratories for cryptocurrencies. We also worked with governments in Latin America in <span id="0YBL" class="replacement automatic replace tentative" name="multistakeholder | multi _-_ stakeholder"><span class="from_repl from_initial">multistakeholder</span> <span class="to_repl to_initial">multi-stakeholder</span></span> partnership to educate over 56,000 young people on cybercrime in age-, gender-, and disability-sensitive exhibitions in children's museums.</td></tr><tr class="table-dark text-dark" name="word/document.xml|c3ef7961fa"><td>To help tackle illegal deforestation, our joint programme with INTERPOL assisted countries in detecting corruption and fraud in the forestry sector and disrupted five criminal organizations.</td></tr><tr class="table-light" name="word/document.xml|beea40661b"><td>Countering the world drug problem</td></tr><tr class="table-dark text-dark" name="word/document.xml|46008344f3"><td>We continued to address the world drug problem. In Afghanistan, we established an information centre for impartial monitoring of drugs and crime and their impact on surrounding countries. We also helped create more monitoring capacity.</td></tr><tr class="table-light" name="word/document.xml|ee7bf3f93d"><td>To promote alternative livelihoods in communities that cultivate illicit crops, we supported the export of 300,000 tons of coffee to Europe with the Fair-Trade certification, generating profitable and sustainable income for 2,000 households in Bolivia, Lao <span id="BZAB" class="replacement automatic replace tentative" name="PDR | People _'s Democratic Republic"><span class="from_repl from_initial">PDR</span> <span class="to_repl to_initial">People's Democratic Republic</span></span> and Myanmar.</td></tr><tr class="table-dark text-dark" name="word/document.xml|a8f9a15199"><td>We expanded the capacity of service providers in Egypt and Pakistan on opioid agonist therapy and trained over 1,100 police officers from Cambodia, Thailand <span id="IUMF" class="replacement automatic delete tentative" name="Thailand _, and | Thailand and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and Vietnam in how to strengthen the partnership between law enforcement, civil society <span id="16L5" class="replacement automatic delete tentative" name="society _, and | society and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and the health sector.</td></tr><tr class="table-light" name="word/document.xml|4183973d51"><td>Terrorism prevention</td></tr><tr class="table-dark text-dark" name="word/document.xml|a3b2d12866"><td>Setting a critical milestone, we organized the first United Nations Global Congress of Victims of Terrorism in New York. We brought together <span id="SCY6" class="replacement automatic replace tentative" name="over | more than"><span class="from_repl from_initial">over</span> <span class="to_repl to_initial">more than</span></span> 600 participants, including 100 victims of terrorism from 25 Member States, to foster stronger global solidarity in support of victims of terrorism. The Congress has provided a major advocacy platform for victim-centric approaches to countering terrorism and preventing violent extremism.</td></tr><tr class="table-light" name="word/document.xml|e53adf0d7a"><td>Highlight box - The First High-Level International Conference on Human Rights, Civil Society and Counter-Terrorism</td></tr><tr class="table-dark text-dark" name="word/document.xml|724eb64238"><td>Together with Spain, we organized in Málaga the first High-Level International Conference on Human Rights, Civil Society and Counter-Terrorism for national, regional, international, and civil society organizations. Over 430 participants discussed how to meaningfully engage civil society in <span id="DM8X" class="replacement automatic replace tentative" name="counterterrorism | counter _-_ terrorism"><span class="from_repl from_initial">counterterrorism</span> <span class="to_repl to_initial">counter-terrorism</span></span> efforts, promote human rights <span id="2QQR" class="replacement automatic delete tentative" name="rights _, and | rights and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and the rule of law.</td></tr><tr class="table-light" name="word/document.xml|1ba5d79a8b"><td>Two new Member States joined the United Nations Global Counter-Terrorism Coordination Compact in 2022, making it the largest coordination mechanism in our Organization. Over 1,000 focal points from 136 Member States, 45 <span id="W06T" class="replacement automatic replace tentative" name="UN | United Nations"><span class="from_repl from_initial">UN</span> <span class="to_repl to_initial">United Nations</span></span> entities, and 13 international and regional organizations now collaborate across our global digital platform to facilitate the work of the Compact.</td></tr><tr class="table-dark text-dark" name="word/document.xml|db04fbcf1a"><td>We fostered partnerships in Africa. In Marrakesh, we brought together Heads of Counter-Terrorism and Security from West Africa in the first high-level event to discuss capacity-building and training. We also supported Member States in East Africa in their efforts to counter terrorism and prevent violent extremism.</td></tr><tr class="table-light" name="word/document.xml|8cf001065c"><td>The link between technology and terrorism remained a focus for us. We assisted Member States in leveraging new and emerging technologies for counter-terrorism and addressing the risks from their misuse.</td></tr><tr class="table-dark text-dark" name="word/document.xml|40c9c47f76"><td>We also addressed the risk of nuclear terrorism. We trained over 500 officials from 120 countries on the International Convention for the Suppression of Acts of Nuclear Terrorism (ICSANT), with the help of new manuals, fictional training cases <span id="XR9I" class="replacement automatic delete tentative" name="cases _, and | cases and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and a new e-learning course.</td></tr><tr class="table-light" name="word/footnotes.xml|d03980449e"><td>References to Kosovo shall be understood to be in the context of Security Council resolution 1244 (1999).</td></tr><tr class="table-dark text-dark" name="word/footer1.xml|7f21049d63"><td>PAGE \*MERGEFORMAT <span id="LTQS" class="replacement automatic delete tentative" name="MERGEFORMAT 2 _se_ | MERGEFORMAT _se_"><span class="from_repl from_initial">2</span> <span class="to_repl to_initial"></span></span></td></tr></tbody>
+  </table>
+
+
+  <!-- <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers">
+      <tr>
+        <th>Original</th>
+        <th>Final</th>
+        <th>Editing</th>
+      </tr>
+    </thead>
+    <tbody id="data_display_table_body">
+      <tr>
+        <td>Default 
+
+          
+
+        </td>
+        <td>Defaultson</td>
+        <td>def@somemail.com</td>
+      </tr>      
+      <tr class="table-primary">
+        <td>Primary</td>
+        <td>Joe</td>
+        <td>joe@example.com</td>
+      </tr>
+      <tr class="table-success">
+        <td>Success</td>
+        <td>Doe</td>
+        <td>john@example.com</td>
+      </tr>
+      <tr class="table-danger">
+        <td>Danger</td>
+        <td>Moe</td>
+        <td>mary@example.com</td>
+      </tr>
+      <tr class="table-info">
+        <td>Info</td>
+        <td>Dooley</td>
+        <td>july@example.com</td>
+      </tr>
+      <tr class="table-warning">
+        <td>Warning</td>
+        <td>Refs</td>
+        <td>bo@example.com</td>
+      </tr>
+      <tr class="table-active">
+        <td>Active</td>
+        <td>Activeson</td>
+        <td>act@example.com</td>
+      </tr>
+      <tr class="table-secondary">
+        <td>Secondary</td>
+        <td>Secondson</td>
+        <td>sec@example.com</td>
+      </tr>
+      <tr class="table-light">
+        <td>Light</td>
+        <td>Angie</td>
+        <td>angie@example.com</td>
+      </tr>
+      <tr class="table-dark text-dark">
+        <td id="test_td">Dark</td>
+        <td>Bo</td>
+        <td>bo@example.com</td>
+      </tr>
+    </tbody>
+  </table> -->
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>        
+      </div>
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+
