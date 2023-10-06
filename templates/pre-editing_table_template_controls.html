@@ -108,6 +108,7 @@ footer {
 var el_i=0
 var el_list=[]
 var select_el_id=""
+var qs_dict=parse_qs()
 
 
 function init(){
@@ -203,6 +204,7 @@ function accept_reject(repl_outcome_dict){
   if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
   repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
   repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  repl_outcome_dict["link"]=qs_dict["link"]
   console.log(repl_outcome_dict)
   //send to backend
   //update UI
@@ -212,6 +214,7 @@ function accept_reject(repl_outcome_dict){
   select_el(select_el_id)
   //display_counts()
   update_ui()
+  post_data_async("log_repl",repl_outcome_dict)
 
 }
 
