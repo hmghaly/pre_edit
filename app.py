@@ -16,39 +16,19 @@ if not os.path.exists(processing_dir): os.makedirs(processing_dir)
 if not os.path.exists(output_dir): os.makedirs(output_dir)
 
 wv_fpath0="data-models/editing_word2vec_1198062_20.model"
+cur_wv_model=Word2Vec.load(wv_fpath0)
 
 # nn_model_path="data-models/model-refined-full-20wv-1-408-1-128-1-0.001-50000.model"
 # loaded_model_OLD=load_nn(nn_model_path,seq_nn_OLD,extract_ft_lb,epoch_i=5,cur_wv_path=wv_fpath0)
 
 nn_model_path2="data-models/model-refined-nn-iter-full-new-1-408-1-256-1-0.0001-10000.model"
-loaded_model=load_nn(nn_model_path2,seq_nn,extract_ft_lb,epoch_i=None,cur_wv_path=wv_fpath0)
-
+loaded_model=load_nn(nn_model_path2,seq_nn,extract_ft_lb,epoch_i=None,wv_model=cur_wv_model)
 
 refined_first_token_dict_fpath="data-models/refined_first_token_dict.sqld"
 refined_first_token_dict=open_sqld(refined_first_token_dict_fpath)
 
 no_context_first_token_dict_fpath="data-models/no_context_first_token_dict.sqld"
 no_context_first_token_dict=open_sqld(no_context_first_token_dict_fpath)
-
-def pre_edit(sent_str,nn_model_obj,first_token_dict,pred_threshold=0.5): #pre-edit a sentence giveb the first token dict and a neural network model object with prediction
-  sent_tokens0=general.add_padding(general.tok(sent_str))
-  span_repl_items=extract_repl_instances(sent_tokens0,[],first_token_dict)
-  new_items=[]
-  for item0 in span_repl_items:
-    if item0["context"]=='|': continue
-    #if nn_model_obj==None: wt0=0
-    wt0=nn_model_obj.pred(item0)
-    # try: wt0=nn_model_obj.pred(item0)
-    # except: wt0=0
-    #print(item0,wt0)
-    #if wt0<pred_threshold: continue
-    item0["wt"]=wt0
-    new_items.append(item0)
-  if nn_model_obj!=None: pre_edited_sent_tokens,valid_repl=repl_span_phrase(sent_tokens0,new_items,sort_by="wt",min_wt=pred_threshold)
-  else: pre_edited_sent_tokens,valid_repl=repl_span_phrase(sent_tokens0,new_items,sort_by="freq",min_wt=0)
-  if pre_edited_sent_tokens[0]=="<s>": pre_edited_sent_tokens=pre_edited_sent_tokens[1:]
-  if pre_edited_sent_tokens[-1]=="</s>": pre_edited_sent_tokens=pre_edited_sent_tokens[:-1]
-  return pre_edited_sent_tokens,valid_repl
 
 #app = Flask(__name__, static_url_path='/assets')
 
