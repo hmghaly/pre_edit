@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+var qs_dict=parse_qs()
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
+
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  repl_outcome_dict["link"]=qs_dict["link"]
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  post_data_async("log_repl",repl_outcome_dict)
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>original</th><th>final</th><th>edited</th></tr></thead>
+    <tbody id="data_display_table_body"><tr class="table-light" name="word/header2.xml|9654a48e3d"><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/C.19/2023/L.4//Rev.1</td></tr><tr class="table-dark text-dark" name="word/document.xml|749e8f5296"><td>Permanent Forum on Indigenous Issues</td></tr><tr class="table-light" name="word/document.xml|e1efcd779a"><td>Twenty-second session</td></tr><tr class="table-dark text-dark" name="word/document.xml|a6da603d65"><td>New York, 17–28 April 2023</td></tr><tr class="table-light" name="word/document.xml|fdb6ae81c7"><td><span id="E41J" class="replacement automatic replace tentative" name="Draft report | Report"><span class="from_repl from_initial">Draft report</span> <span class="to_repl to_initial">Report</span></span></td></tr><tr class="table-dark text-dark" name="word/document.xml|b35a509d16"><td>Rapporteur: Ms. Tove Søvndahl Gant</td></tr><tr class="table-light" name="word/document.xml|23a17e7854"><td><span id="RQX2" class="replacement automatic replace tentative" name="Chapter I | chap. 1"><span class="from_repl from_initial">Chapter I</span> <span class="to_repl to_initial">chap. 1</span></span></td></tr><tr class="table-dark text-dark" name="word/document.xml|0a6c084ff8"><td>Matters calling for action by the Economic and Social Council or brought to its attention</td></tr><tr class="table-light" name="word/document.xml|a8d157a3ce"><td>B. Matters brought to the attention of the Council</td></tr><tr class="table-dark text-dark" name="word/document.xml|ddb83edf49"><td>Recommendations of the Permanent Forum</td></tr><tr class="table-light" name="word/document.xml|766d2bdc99"><td>Dialogues: thematic dialogues (item 5 (g))</td></tr><tr class="table-dark text-dark" name="word/document.xml|d32df29ec2"><td>International Decade of Indigenous Languages (2022–2032)</td></tr><tr class="table-light" name="word/document.xml|5c616629e4"><td>1. The Permanent Forum commends the United Nations Educational, Scientific and Cultural Organization and the Global Task Force for Making a Decade of Action for Indigenous Languages for developing the Global Action Plan of the International Decade of Indigenous Languages.</td></tr><tr class="table-dark text-dark" name="word/document.xml|dcba82708a"><td>2. The Permanent Forum recommends that Member States support, financially and in every other way, Indigenous Peoples’ development of their own strategies in revitalizing, strengthening and developing their languages parallel to other efforts under the Global Action Plan.</td></tr><tr class="table-light" name="word/document.xml|64e049d894"><td>3. The Permanent Forum recalls the relevance of article 13 (1) of the United Nations Declaration on the Rights of Indigenous Peoples and encourages States to step up efforts, in collaboration with Indigenous Peoples, to advance the realization of the linguistic and cultural rights of Indigenous Peoples, including through the right to education in Indigenous Peoples’ languages in the context of the International Decade.</td></tr><tr class="table-dark text-dark" name="word/document.xml|fa4084dde7"><td>4. The importance of Indigenous Peoples’ languages is clear given that they embody and convey ancestral and millennial Indigenous Peoples’ knowledge, culture, history, traditions and values, including the critical knowledge of nature and the environment that is so crucial in addressing the climate crisis. Indigenous Peoples individually and collectively carry their rich cultural knowledge across generations. The Permanent Forum shares the vision that Indigenous Peoples will continue to be able to articulate in Indigenous Peoples’ languages the concepts that the future of the planet depends on us.</td></tr><tr class="table-light" name="word/document.xml|0a0c521fc1"><td>5. Indigenous Peoples’ languages are an integral part of Indigenous Peoples and there is a recognition that they have the right to learn and use Indigenous Peoples’ languages. To further strengthen Indigenous Peoples’ languages, there is a need to use public policy to popularize them so that they are part of the mainstream and visible and available in every aspect of life. In that regard, it is important that Indigenous Peoples’ languages be made a part of the arts through the development, creation and sharing of songs, literature and the media as well as in the formal education system and in the provision of basic services.</td></tr><tr class="table-dark text-dark" name="word/document.xml|bc5e34c72a"><td>6. The Permanent Forum underlines the need for the examination of national policies, practices and funding programmes on Indigenous media, including capacity-building and content production in Indigenous languages by Indigenous media professionals, including Indigenous women <span id="1AQZ" class="replacement automatic delete tentative" name="women, and | women and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and for the promotion of international cooperation, knowledge-sharing and cooperation among Indigenous media and other partners, including mainstream media and Governments. The Permanent Forum recommends that the United Nations Educational, Scientific and Cultural Organization, in partnership with relevant United Nations entities and Indigenous Peoples, conduct a study on Indigenous media and present their findings at the annual session of the Permanent Forum in 2025.</td></tr><tr class="table-light" name="word/document.xml|b91eda7e1e"><td>7. The Permanent Forum acknowledges the commitments and support of the Member States that have established action plans, in parallel with the Global Action Plan, that include support for transformative initiatives that strengthen and protect Indigenous languages, such as the establishment of universities of Indigenous Peoples’ languages in Mexico and Morocco and the efforts of Nordic and other countries in committing to engaging in digital communication and information technologies for Indigenous Peoples’ languages. For those Member States that have yet to develop an action plan, the Permanent Forum reiterates the call for Member States to initiate such plans, in full cooperation with Indigenous Peoples.</td></tr><tr class="table-dark text-dark" name="word/document.xml|f90a9fccd9"><td>8. Importantly, and in parallel with action plans, the Permanent Forum calls on Member States to urgently provide adequate and appropriate support and resources for Indigenous Peoples’ languages, with a focus on Indigenous-led initiatives. That is especially crucial in circumstances in which the languages are critically endangered. When an Indigenous Peoples’ language becomes extinct, the richness of the ways of life and world views of Indigenous Peoples is lost, which is detrimental both to Indigenous Peoples and to the world.</td></tr><tr class="table-light" name="word/document.xml|afd85a9ce6"><td>9. The Permanent Forum acknowledges the importance of collaboration across all sectors to ensure that Indigenous Peoples’ languages continue to thrive for generations. In that regard, the Permanent Forum calls upon large technological companies to support the development and accessibility of digital tools for the expansion and increased use of Indigenous Peoples’ languages with the full and effective participation of Indigenous Peoples.</td></tr><tr class="table-dark text-dark" name="word/document.xml|861c596ee1"><td>10. The Permanent Forum acknowledges the crucial role that Indigenous women play in the transmittal of Indigenous Peoples’ languages and emphasizes the significance of providing educational opportunities for them.</td></tr><tr class="table-light" name="word/document.xml|1fe21f84c5"><td>11. The Permanent Forum urges Member States, international organizations and the United Nations system to support, financially and by other means, the strengthening of the Ibero-American Institute of Indigenous Languages, which aims to guarantee the exercise of the cultural and linguistic rights recognized in, inter alia, the United Nations Declaration on the Rights of Indigenous Peoples and International Labour Organization (ILO) Indigenous and Tribal Peoples Convention, 1989 (No. 169).</td></tr><tr class="table-dark text-dark" name="word/document.xml|72b08d2ad6"><td>Indigenous Women and Girls</td></tr><tr class="table-light" name="word/document.xml|b68208bb90"><td>12. The Permanent Forum is alarmed by the widespread reports of criminalization and killings of Indigenous women as a direct result of these women defending their rights and their lands and resources.</td></tr><tr class="table-dark text-dark" name="word/document.xml|1b7edc2b8d"><td>13. The Permanent Forum welcomes and endorses general recommendation No. 39 (2022) on the rights of Indigenous women and girls of the Committee on the Elimination of Discrimination against Women. Recommendation No. 39 provides critical guidance to States parties on legislative, policy and other relevant measures to ensure the implementation of their obligations under the Convention on the Elimination of All Forms of Discrimination against Women, while taking into account the rights of Indigenous women and girls derived from specific instruments for the protection of Indigenous Peoples, such as the United Nations Declaration on the Rights of Indigenous Peoples and ILO Convention No. 169. The Permanent Forum calls upon Member States that have not yet done so to ratify without delay the Convention on the Elimination of All Forms of Discrimination against Women and ILO Convention No. 169.</td></tr><tr class="table-light" name="word/document.xml|0a12db3cad"><td>14. Discrimination and violence disproportionately affect Indigenous women and girls worldwide and are intersectional based on factors including sex, gender, Indigenous origin, status or identity, race, ethnicity, disability, age, language, socioeconomic status, HIV/AIDS status and other factors. General recommendation No. 39 reflects and recognizes that Indigenous women and girls are inextricably linked to their peoples, lands, territories, natural resources and culture. Their leadership is critical to the realization of their rights and must be respected and upheld by Member States at all times.</td></tr><tr class="table-dark text-dark" name="word/document.xml|d2c8733fc2"><td>15. The accessibility of general recommendation No. 39 to Indigenous Peoples is crucial to ensure its effective implementation and impact on the ground.</td></tr><tr class="table-light" name="word/document.xml|a91b8d241f"><td>16. The <span id="HPBH" class="replacement automatic delete tentative" name="The Permanent Forum | The Forum"><span class="from_repl from_initial">Permanent</span> <span class="to_repl to_initial"></span></span> Forum encourages Member States to translate general recommendation No. 39 into the Indigenous languages spoken by Indigenous Peoples in their State by the end of the International Decade on Indigenous Languages, in 2032.</td></tr><tr class="table-dark text-dark" name="word/document.xml|79e48a2a08"><td>17. Indigenous women's collective rights and the decolonization of State structures are essential to implementing general recommendation No. 39. The <span id="PRII" class="replacement automatic delete tentative" name="The Permanent Forum | The Forum"><span class="from_repl from_initial">Permanent</span> <span class="to_repl to_initial"></span></span> Forum recommends that the United Nations Entity for Gender Equality and the Empowerment of Women (UN-Women) conduct and present a study by 2025 on the impacts of colonization on the rights of Indigenous women and girls, including within the context of the UN-Women strategy for the inclusion and visibility of Indigenous women, in collaboration with other United Nations entities. The study should identify critical action areas and strategies to advance the implementation of general recommendation No. 39.</td></tr><tr class="table-light" name="word/document.xml|4d9a4f2e70"><td>18. The Permanent Forum also recommends that the Commission on the Status of Women include in its agenda a specific focus on Indigenous women and girls to identify best practices and guide Member States in implementing general recommendation No. 39.</td></tr><tr class="table-dark text-dark" name="word/document.xml|e2d4699888"><td>19. The Permanent Forum has also decided to include an annual review of progress on the implementation of general recommendation No. 39 within the agenda items pertaining to human rights.</td></tr><tr class="table-light" name="word/document.xml|dcde53999c"><td>Indigenous platforms established within United Nations entities (item 5 (f))</td></tr><tr class="table-dark text-dark" name="word/document.xml|b763bbfcde"><td>20. The Permanent Forum appreciates the updates provided on platforms for Indigenous Peoples established by the secretariat of the Convention on Biological Diversity, the International Fund for Agricultural Development (IFAD), the Conference of the Parties to the United Nations Framework Convention on Climate Change, the Green Climate Fund, the Food and Agriculture Organization of the United Nations, the Indigenous Peoples Major Group for Sustainable Development and the Global-Hub on Indigenous Peoples’ Food Systems.</td></tr><tr class="table-light" name="word/document.xml|60ae221da4"><td>21. The <span id="HQKA" class="replacement automatic delete tentative" name="The Permanent Forum | The Forum"><span class="from_repl from_initial">Permanent</span> <span class="to_repl to_initial"></span></span> Forum urges Member States and <span id="4UXG" class="replacement automatic replace tentative" name="UN | United Nations"><span class="from_repl from_initial">UN</span> <span class="to_repl to_initial">United Nations</span></span> entities to ensure the implementation of FPIC in all actions and measures, especially in the context of environment, biodiversity, climate change, food systems and sustainable development.</td></tr><tr class="table-dark text-dark" name="word/document.xml|9430c7ada5"><td>22. The Permanent Forum reiterates its call at its twenty-first session for a clear distinction between Indigenous Peoples and local communities. All United Nations entities and States parties to treaties concerning the environment, biodiversity and climate are encouraged to eliminate the use of the term “local communities” in conjunction with Indigenous Peoples, so that the term “Indigenous Peoples and local communities” would be abolished.</td></tr><tr class="table-light" name="word/document.xml|be46298ff9"><td>24. Urgent transformational actions by States and other development actors must be based on a human rights framework enabling the identification of the root causes of inequality and providing mechanisms to tackle systemic discrimination and racism and must contribute to reforming discriminatory laws and policies and strengthening the accountability of States, including ensuring democratic space for all.</td></tr><tr class="table-dark text-dark" name="word/document.xml|16f0d2e20e"><td>23. The Permanent Forum encourages United Nations entities, the World Bank, the Green Climate Fund, the African Commission on Human and Peoples’ Rights and other relevant international and regional bodies to align their policies with the United Nations Declaration on the Rights of Indigenous Peoples. Indigenous Peoples should be employed within those entities as part of diversity and inclusion policies and to ensure Indigenous perspectives.</td></tr><tr class="table-light" name="word/document.xml|8da93f0c14"><td>25. The Permanent Forum reiterates its recommendation to adopt a programme of work on article 8 (j) and other provisions of the Convention on Biological Diversity and strengthened institutional arrangements through a permanent subsidiary body to take forward the Kunming-Montreal Global Biodiversity Framework (GBF) and to ensure a human rights-based approach <span id="BI2O" class="replacement automatic delete tentative" name="approach, and | approach and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and full and effective participation of Indigenous Peoples, by the 16th meeting of the Conference of Parties to the Convention. The Permanent Forum recommends ensuring direct access to financial resources for Indigenous Peoples, inclusive of all landscapes and seascapes, more efficient financial mechanisms managed by Indigenous Peoples and the inclusion of Indigenous Peoples representatives in the governance of the GBF to better design and implement grants. In that respect, the modus operandi and methods of work for enhanced Indigenous participation under article 8 (j) and related provisions must be the minimum standard and be prioritized as an essential prerequisite for the full implementation of target 3 of the GBF.</td></tr><tr class="table-dark text-dark" name="word/document.xml|6dca760400"><td>26. The Permanent Forum welcomes the updated IFAD Policy on Engagement with Indigenous Peoples, developed in consultation with the Steering Committee of the Indigenous Peoples’ Forum at IFAD, and recommends that IFAD further strengthen its policies on consultations and Indigenous Peoples’ food systems. These should include, inter alia, a focus on climate change, food security <span id="1T4I" class="replacement automatic delete tentative" name="security, and | security and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and strengthening country-level partnerships <span id="S8UQ" class="replacement automatic delete tentative" name="partnerships, and | partnerships and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and resource mobilization.</td></tr><tr class="table-light" name="word/document.xml|3ca35f4642"><td>27. The Permanent Forum recommends that the Intergovernmental Panel on Climate Change prepare a special report within its seventh assessment cycle, led by Indigenous academics, scientists and traditional knowledge holders, to assess the opportunities for and threats against Indigenous Peoples in the areas of adaptation, mitigation <span id="JT8A" class="replacement automatic delete tentative" name="mitigation, and | mitigation and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and loss and damage.</td></tr><tr class="table-dark text-dark" name="word/document.xml|86687bf169"><td>28. The Permanent Forum notes that targeted programmes and measures and the allocation of resources for the implementation of the Sustainable Development Goals at <span id="2350" class="replacement automatic insert tentative" name="at local | at the local"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the</span></span> local levels are needed to adequately address the situation of Indigenous Peoples.</td></tr><tr class="table-light" name="word/header3.xml|6d27942be9"><td>United Nations</td></tr><tr class="table-dark text-dark" name="word/header3.xml|8b1c478339"><td>E/C.19/2023/L.4/Rev.1</td></tr><tr class="table-light" name="word/header3.xml|908670a0b5"><td></td></tr><tr class="table-dark text-dark" name="word/header3.xml|dea9f25978"><td>Economic and Social Council</td></tr><tr class="table-light" name="word/header3.xml|1b4b936f0e"><td>Distr.: Limited</td></tr><tr class="table-dark text-dark" name="word/header3.xml|d12f18e5c1"><td>27 April 2023</td></tr><tr class="table-light" name="word/header3.xml|3b1aa209df"><td>Original: English</td></tr><tr class="table-dark text-dark" name="word/footer3.xml|8dfde104a2"><td>23-07510 (E) 250423</td></tr><tr class="table-light" name="word/footer3.xml|ce774ed2c7"><td>*2307510</td></tr><tr class="table-dark text-dark" name="word/footer2.xml|7c2f90a3ff"><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 3</td></tr><tr class="table-light" name="word/footer2.xml|92a9c96bd7"><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 23-07510</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|7dc5d06906"><td></td></tr><tr class="table-light" name="word/footnotes.xml|164106373b"><td></td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|f4161d4944"><td>Target 3 of the Global Biodiversity Framework: to ensure that at least 30 per cent of terrestrial, inland water and of coastal and marine areas are effectively conserved and managed.</td></tr><tr class="table-light" name="word/footer1.xml|2da9a01efd"><td>DOCVARIABLE "FooterJN \*MERGEFORMAT 23-07510</td></tr><tr class="table-dark text-dark" name="word/footer1.xml|c75bc0bed4"><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-light" name="word/header1.xml|89a6c65799"><td>DOCVARIABLE "sss1 \*MERGEFORMAT E/C.19/2023/L.4/Rev.1</td></tr></tbody>
+  </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>        
+      </div>
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+

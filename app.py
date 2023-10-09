@@ -61,7 +61,20 @@ def check_repl():
     # except: output=json.dumps(cur_dict) 
     return json.dumps(cur_dict) 
 
+@app.route('/dashboard',methods = ['POST', 'GET'])
+def pre_edit_interface():
+    fopen=open("templates/dashboard_template.html")
+    content=fopen.read()
+    fopen.close()
+    return content
 
+
+@app.route('/input',methods = ['POST', 'GET'])
+def pre_edit_interface():
+    fopen=open("templates/input_template.html")
+    content=fopen.read()
+    fopen.close()
+    return content
 
 #pre_edit(sent_str,nn_model_obj,first_token_dict,pred_threshold=0.5)
 @app.route('/pre_edit_api',methods = ['POST', 'GET'])
@@ -71,11 +84,13 @@ def pre_edit_api():
     if request.method == 'POST':
         posted_data=request.data.decode("utf-8")
         posted_data_dict=json.loads(posted_data)    
-    default_sent="UN missions in DRC and CAR, Chad and Sudan"
-    sent=posted_data_dict.get("sent",default_sent)
-    cur_dict["sent"]=sent
-    pre_edited_sent_tokens,valid_repl=pre_edit(sent,loaded_model,refined_first_token_dict,pred_threshold=0)
-    cur_dict["tokens"]=pre_edited_sent_tokens
+    default_text="UN missions in DRC and CAR, Chad and Sudan"
+    text0=posted_data_dict.get("text",default_text)
+    freq_threshold0=posted_data_dict.get("freq_threshold",None)
+    wt_threshold0=posted_data_dict.get("wt_threshold",0.3)
+    cur_dict["text"]=text0
+    pre_edited_html,valid_repl=pre_edit_html(text0,loaded_model,refined_first_token_dict,pred_threshold=wt_threshold0,,freq_threshold=freq_threshold0)
+    cur_dict["pre_edited_html"]=pre_edited_html
     cur_dict["repl_list"]=valid_repl
     return json.dumps(cur_dict)
 

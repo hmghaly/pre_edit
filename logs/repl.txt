@@ -1,3 +1,94 @@
 {"decision": "reject", "all": false, "affected": 1, "repl": "[keep \u21e8 [[keep", "link": "processing/2306817E_Editing.html", "time": "Fri Oct  6 17:51:32 2023"}
 {"decision": "reject", "all": false, "affected": 1, "repl": "date] \u21e8 date]]", "link": "processing/2306817E_Editing.html", "time": "Fri Oct  6 17:51:53 2023"}
 {"decision": "reject", "all": false, "affected": 1, "repl": "MERGEFORMAT 2 &lt;/s&gt; \u21e8 MERGEFORMAT &lt;/s&gt;", "link": "processing/2306817E_Editing.html", "time": "Fri Oct  6 17:51:55 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "Draft report | Report", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:12 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "Chapter I \u21e8 chap. 1", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:15 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "women, and | women and", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:17 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "The Permanent Forum \u21e8 The Forum", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:20 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "The Permanent Forum \u21e8 The Forum", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:23 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "The Permanent Forum \u21e8 The Forum", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:28 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "UN | United Nations", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:31 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "approach, and | approach and", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:35 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "security, and | security and", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:37 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "partnerships, and | partnerships and", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:41 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "mitigation, and | mitigation and", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:57 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "at local | at the local", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Fri Oct  6 18:48:59 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "consultations, and | consultations and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:50:26 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "Agenda for Sustainable Development and | Agenda and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:50:34 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "GDP), \u21e8 GDP,", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:50:41 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "conflicts, and | conflicts and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:50:47 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "progress, and | progress and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:50:52 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "economy, and | economy and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:50:55 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:50:59 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "social, and | social and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:01 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "wellbeing | well-being", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:03 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "poverty, and | poverty and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:05 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:06 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "work ( \u21e8 work (Organisation for Economic Co-operation and Development (", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:44 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "IMF). \u21e8 IMF.", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:51 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:57 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:51:58 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "Agenda for Sustainable Development and | Agenda and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:52:10 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "UN | United Nations", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:52:16 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "capacity building | capacity-building", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:52:27 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "SNA \u21e8 Somali National Army", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:52:31 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "capacity, and | capacity and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:52:37 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "20th | twentieth", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:28 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "crypto assets | cryptoassets", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:30 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "SNA \u21e8 Somali National Army", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:33 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "particularly \u21e8 in particular", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:40 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "countries, and | countries and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:43 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "decision making | decision-making", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:48 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "longstanding | long-standing", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:55 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:57 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "SNA \u21e8 Somali National Army", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:53:59 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "SNA \u21e8 Somali National Army", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:02 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "wellbeing | well-being", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:05 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "economy, and | economy and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:24 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "analyze | analyse", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:27 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "socio-economic | socioeconomic", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:29 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "statistics, and | statistics and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:30 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:31 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:54:32 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "Agenda for Sustainable Development and | Agenda and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:22 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "GDP), \u21e8 GDP,", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:24 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "conflicts, and | conflicts and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:51 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "progress, and | progress and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:52 2023"}
+{"decision": "accept_all", "all": true, "affected": 2, "repl": "economy, and | economy and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:53 2023"}
+{"decision": "accept_all", "all": true, "affected": 7, "repl": "SDGs | Sustainable Development Goals", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:55 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "social, and | social and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:56 2023"}
+{"decision": "accept_all", "all": true, "affected": 2, "repl": "wellbeing | well-being", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:58 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "poverty, and | poverty and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:56:59 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "work ( | work (Organisation for Economic Co-operation and Development (", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:00 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "IMF). | IMF.", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:01 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "Agenda for Sustainable Development and | Agenda and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:01 2023"}
+{"decision": "accept_all", "all": true, "affected": 3, "repl": "UN | United Nations", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:04 2023"}
+{"decision": "accept_all", "all": true, "affected": 2, "repl": "capacity building | capacity-building", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:08 2023"}
+{"decision": "accept_all", "all": true, "affected": 4, "repl": "SNA | Somali National Army", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:09 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "capacity, and | capacity and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:11 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "20th | twentieth", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:12 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "crypto assets | cryptoassets", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:13 2023"}
+{"decision": "accept_all", "all": true, "affected": 2, "repl": "particularly | in particular", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:14 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "countries, and | countries and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:14 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "decision making | decision-making", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:15 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "longstanding | long-standing", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:16 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "analyze | analyse", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:16 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "socio-economic | socioeconomic", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:17 2023"}
+{"decision": "accept_all", "all": true, "affected": 2, "repl": "statistics, and | statistics and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:17 2023"}
+{"decision": "accept_all", "all": true, "affected": 2, "repl": "inclusive, and | inclusive and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:18 2023"}
+{"decision": "accept_all", "all": true, "affected": 2, "repl": "Agenda for Sustainable Development, | Agenda,", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:18 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "society, and | society and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:19 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "the UN Statistical | the Statistical", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:20 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "equality, and | equality and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:21 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "process, and | process and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:21 2023"}
+{"decision": "accept_all", "all": true, "affected": 3, "repl": "SDG | Sustainable Development Goal", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:22 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "Capacity Building | Capacity-Building", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:22 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "UN System | United Nations system", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:23 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "vulnerabilities, and | vulnerabilities and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:23 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "participation, and | participation and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:24 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "data, and | data and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:25 2023"}
+{"decision": "accept_all", "all": true, "affected": 3, "repl": "Beyond GDP | beyond gross domestic product", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:25 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "level, and | level and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:26 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "and OECD | and the Organization for Economic Cooperation and Development (OECD", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:26 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "UN Women | UN-Women", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:27 2023"}
+{"decision": "accept_all", "all": true, "affected": 1, "repl": "report, and | report and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:27 2023"}

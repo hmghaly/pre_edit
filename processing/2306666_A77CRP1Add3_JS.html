@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+var qs_dict=parse_qs()
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
+
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  repl_outcome_dict["link"]=qs_dict["link"]
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  post_data_async("log_repl",repl_outcome_dict)
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>original</th><th>final</th><th>edited</th></tr></thead>
+    <tbody id="data_display_table_body"><tr class="table-light" name="word/document.xml|4c7ae5bc98"><td>A/77/CRP.X</td></tr><tr class="table-dark text-dark" name="word/document.xml|4c87da350a"><td></td></tr><tr class="table-light" name="word/document.xml|eea548e10b"><td>11 April month 2023</td></tr><tr class="table-dark text-dark" name="word/document.xml|67cedfdddd"><td>Original: English</td></tr><tr class="table-light" name="word/document.xml|032e161e7e"><td>General Assembly</td></tr><tr class="table-dark text-dark" name="word/document.xml|6ecbd5a8ac"><td>Seventy-seventh session</td></tr><tr class="table-light" name="word/document.xml|16eae8fc4c"><td>Agenda item XX</td></tr><tr class="table-dark text-dark" name="word/document.xml|9bc79def64"><td>Strengthening of the United Nations system:</td></tr><tr class="table-light" name="word/document.xml|882c47bd41"><td>strengthening of the United Nations system</td></tr><tr class="table-dark text-dark" name="word/document.xml|8b11f07ddf"><td>Our Common Agenda</td></tr><tr class="table-light" name="word/document.xml|ed891fa200"><td>Policy Brief 4 : ‘Valuing What Counts’ -</td></tr><tr class="table-dark text-dark" name="word/document.xml|403c819916"><td>Framework to Progress Beyond GDP</td></tr><tr class="table-light" name="word/document.xml|401cfecef3"><td>Summary</td></tr><tr class="table-dark text-dark" name="word/document.xml|c9f6ff52cd"><td>The challenges we face can only be addressed through stronger international cooperation. The challenges that we face can only be addressed through stronger international cooperation. The Summit of the Future in 2024 is an opportunity to agree on multilateral solutions for a better tomorrow, by strengthening global governance for both present and future generations (General Assembly resolution 76/307). In my capacity as Secretary-General, I have been invited to provide inputs to the preparations for the Summit in the form of action-oriented recommendations, building on the proposals contained in my report entitled “Our Common Agenda” (A/75/982), which was itself a response to the declaration on the commemoration of the seventy-fifth anniversary of the United Nations (General Assembly resolution 75/1). The present policy brief is one such input. It elaborates on the ideas first proposed in Our Common Agenda, taking into account subsequent guidance from Member States and over one year of intergovernmental and multi-stakeholder consultations <span id="ANPG" class="replacement automatic delete tentative" name="consultations, and | consultations and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and rooted in the purposes and the principles of the Charter of the United Nations, the Universal Declaration of Human Rights and other international instruments.</td></tr><tr class="table-light" name="word/document.xml|bba22fd60c"><td>Purpose of this policy brief</td></tr><tr class="table-dark text-dark" name="word/document.xml|3674d379cd"><td>The 2030 Agenda <span id="YTH9" class="replacement automatic delete tentative" name="Agenda for Sustainable Development and | Agenda and"><span class="from_repl from_initial">for Sustainable Development</span> <span class="to_repl to_initial"></span></span> and Our Common Agenda recognize a harmful anachronism at the heart of global policymaking, that our economic models and measurements overlook many aspects that sustain life and contribute to human well-being, while perversely placing disproportionate value on activities that deplete the planet. The intention of the proposals presented in this policy brief is not to replace Gross Domestic Product (GDP <span id="2SIX" class="replacement automatic delete tentative" name="GDP), | GDP,"><span class="from_repl from_initial">)</span> <span class="to_repl to_initial"></span></span> , but to outline a path to complementary metrics to GDP that more completely focus on what matters to people, the planet, and the future.</td></tr><tr class="table-light" name="word/document.xml|6ef2f7eb41"><td>Today, the world is facing catastrophic and interconnected crises – including climate change, deteriorating ecosystems and biodiversity loss, devastating conflicts <span id="MHY4" class="replacement automatic delete tentative" name="conflicts, and | conflicts and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and violence, increasing poverty, hunger, inequalities, unsustainable debt burdens, and heightened costs of living – which show no sign of abating. The Sustainable Development Goals (SDGs) are badly off-track. GDP has become a proxy for how we determine value, how we measure wealth creation and development progress <span id="7M5Y" class="replacement automatic delete tentative" name="progress, and | progress and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and how we allocate resources on that basis.</td></tr><tr class="table-dark text-dark" name="word/document.xml|a2678cc008"><td>As mentioned in my Our Common Agenda report, GDP does not account for human well-being, environmental sustainability, unpaid household services, such as the care economy <span id="DBC5" class="replacement automatic delete tentative" name="economy, and | economy and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and the unequal impact of economic activity. Moreover, it fails to capture the human and environmental destruction of some economic activities. Harmful practices, such as deforestation, overfishing, the burning of fossil fuels and other destruction of nature, often count as an increase in GDP. To achieve the targets we have set to address the triple planetary and other crises, a fundamental shift in how we measure progress is urgently needed.</td></tr><tr class="table-light" name="word/document.xml|7319649afc"><td>Discussions on moving ‘Beyond GDP’ have been ongoing for decades.These efforts have laid the foundations for establishing a shared language and community of practice to go beyond GDP.</td></tr><tr class="table-dark text-dark" name="word/document.xml|e39691235e"><td>Examples of recent initiatives include:</td></tr><tr class="table-light" name="word/document.xml|ae23e86f98"><td>The 2030 Agenda and the <span id="9QXX" class="replacement automatic replace tentative" name="SDGs | Sustainable Development Goals"><span class="from_repl from_initial">SDGs</span> <span class="to_repl to_initial">Sustainable Development Goals</span></span> with their economic, social <span id="7OLL" class="replacement automatic delete tentative" name="social, and | social and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and environmental dimensions.</td></tr><tr class="table-dark text-dark" name="word/document.xml|1746802f91"><td>Human development indices (UNDP), supplementing GDP with <span id="K2R5" class="replacement automatic replace tentative" name="wellbeing | well-being"><span class="from_repl from_initial">wellbeing</span> <span class="to_repl to_initial">well-being</span></span> and agency, inequality, multidimensional poverty <span id="FS2C" class="replacement automatic delete tentative" name="poverty, and | poverty and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and considering the interconnectedness of socioeconomic and planetary systems.</td></tr><tr class="table-light" name="word/document.xml|dfc1335d9c"><td>Gender-specific indicators across thematic areas that go beyond <span id="4QOM" class="replacement automatic replace tentative" name="SDGs | Sustainable Development Goals"><span class="from_repl from_initial">SDGs</span> <span class="to_repl to_initial">Sustainable Development Goals</span></span> and adequately measure and compare the situation of women and men in all areas of life, including measures of time spent on unpaid care and domestic work and its distribution and economic value, along with other measures such as the economic cost of violence against women.</td></tr><tr class="table-dark text-dark" name="word/document.xml|ba9555f18b"><td>Inclusive growth and Beyond GDP work <span id="TSXP" class="replacement automatic insert tentative" name="work ( | work (Organisation for Economic Co-operation and Development ("><span class="from_repl from_initial"></span> <span class="to_repl to_initial">(Organisation for Economic Co-operation and Development</span></span> (OECD, European Commission, World Bank, IMF <span id="Y0IR" class="replacement automatic delete tentative" name="IMF). | IMF."><span class="from_repl from_initial">)</span> <span class="to_repl to_initial"></span></span> .</td></tr><tr class="table-light" name="word/document.xml|57441189b0"><td>Measures of environmental degradation and depletion, environmental and economic accounting, and measures of inclusive or comprehensive wealth by the UN Environment Programme and World Bank.</td></tr><tr class="table-dark text-dark" name="word/document.xml|a781553309"><td>Of these, the <span id="3WJ6" class="replacement automatic replace tentative" name="SDGs | Sustainable Development Goals"><span class="from_repl from_initial">SDGs</span> <span class="to_repl to_initial">Sustainable Development Goals</span></span> and their indicators, universally adopted by Member States, were consciously crafted to address the shortcomings of GDP. Indeed, the <span id="8F14" class="replacement automatic replace tentative" name="SDGs | Sustainable Development Goals"><span class="from_repl from_initial">SDGs</span> <span class="to_repl to_initial">Sustainable Development Goals</span></span> and their indicators are the most comprehensive ‘Beyond GDP’ framework agreed to and measured today. Moreover, SDG target 17.19 specifically calls for Member States to “build on existing initiatives to develop measurements of progress on sustainable development that complement Gross Domestic Product and support statistical capacity-building in developing countries” by 2030.</td></tr><tr class="table-light" name="word/document.xml|e63810ede9"><td>This call was taken up in Our Common Agenda, and the UN High-Level Committee on Programmes’ (HLCP) report ‘HYPERLINK "https://unsceb.org/valuing-what-counts-united-nations-system-wide-contribution-beyond-gross-domestic-product-gdp \hValuing What Counts: United Nations System Contribution on Progress Beyond Gross Domestic Product,’ which serves as the technical foundation to this policy brief. This brief also aims to build on ongoing processes, including the multi-year update of the United Nations System of National Accounts (SNA) by 2025 and the implementation of the System of Environmental-Economic Accounting (SEEA) and SEEA Ecosystem Accounting.</td></tr><tr class="table-dark text-dark" name="word/document.xml|4a53492a1b"><td>Building on that work, I now present proposals to help develop a universal and comprehensive measurement of progress and sustainable development to complement GDP. There are three concrete recommendations for Member States to consider:</td></tr><tr class="table-light" name="word/document.xml|fbdb0bea15"><td>a renewed political commitment to create a conceptual value framework that can accurately ‘value what counts’ for people, the planet, and the future, anchored in the 2030 Agenda <span id="XAS8" class="replacement automatic delete tentative" name="Agenda for Sustainable Development and | Agenda and"><span class="from_repl from_initial">for Sustainable Development</span> <span class="to_repl to_initial"></span></span> and its commitment to leave no one behind;</td></tr><tr class="table-dark text-dark" name="word/document.xml|ce7b33a92d"><td>the elaboration of a robust technical, scientific process, informed by sound and disaggregated data, resulting in a <span id="Z4B6" class="replacement automatic replace tentative" name="UN | United Nations"><span class="from_repl from_initial">UN</span> <span class="to_repl to_initial">United Nations</span></span> value dashboard of a limited number of key indicators of Beyond GDP; and</td></tr><tr class="table-light" name="word/document.xml|c5a21618e4"><td>a major capacity <span id="IZZK" class="replacement automatic insert tentative" name="capacity building | capacity-building"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">-</span></span> building and resourcing initiative to enable Member States to use the new framework effectively.</td></tr><tr class="table-dark text-dark" name="word/document.xml|cfb9d6228a"><td>Why do we need to move Beyond GDP?</td></tr><tr class="table-light" name="word/document.xml|c57d262883"><td>GDP is the most widely used benchmark to measure a country's economic progress and the value of its domestic production of goods and services. It is part of the <span id="EYDO" class="replacement automatic replace tentative" name="SNA | Somali National Army"><span class="from_repl from_initial">SNA</span> <span class="to_repl to_initial">Somali National Army</span></span> that sets out a common language for statisticians, economists, and policymakers across all countries. GDP can be considered a success story insofar as it has enabled thousands of national accountants worldwide to produce reliable, consistent, comparable, and replicable national accounts. And it provides a useful way to tell a compelling economic narrative.</td></tr><tr class="table-dark text-dark" name="word/document.xml|9b25207ddf"><td>It has, however, been used in unintended ways. By using GDP or income as a proxy for development, we fail to recognize that sustainable development is multidimensional and affected by multiple factors, such as access to resources, productivity traps, social and environmental dependencies, inequalities, vulnerabilities, challenges related to institutional capacity <span id="O51F" class="replacement automatic delete tentative" name="capacity, and | capacity and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and the significant vulnerabilities that may exist in countries with high GDP levels. Similar levels of national GDP can obscure the very different development realities, vulnerabilities and challenges that exist in different countries.</td></tr><tr class="table-light" name="word/document.xml|2ab027fbcd"><td>And yet, GDP continues to play a key role as a yardstick for providing international support, including in criteria for countries classified as least developed or eligible for support by the International Development Association, leaving some countries with high vulnerabilities without access to concessional financing. It oversimplifies and obscures the complex needs of countries in special circumstances – including middle-income countries, small island developing States and landlocked developing countries.</td></tr><tr class="table-dark text-dark" name="word/document.xml|7f96efac81"><td>GDP emerged as a tool to address the crises of the <span id="Y4XO" class="replacement automatic replace tentative" name="20th | twentieth"><span class="from_repl from_initial">20th</span> <span class="to_repl to_initial">twentieth</span></span> century but fails to sufficiently address the environmental and social concerns of the world today. For example:</td></tr><tr class="table-light" name="word/document.xml|51a8ed1f15"><td>GDP does not account for air pollution, natural resource depletion, environmental degradation and biodiversity loss. Rather, these negative externalities often drive increases in GDP without consideration of the broader, longer-term socioeconomic and environmental damage involved. Global GDP has doubled since 1970, while the depletion of resources more than tripled, with disastrous impacts on the natural environment. GDP contributes to the perception that permanent economic growth without reference to environmental and social considerations can reasonably continue indefinitely within planetary boundaries.</td></tr><tr class="table-dark text-dark" name="word/document.xml|952ee516be"><td>GDP does not capture the full extent of the informal economy and the social value of activities, such as unpaid care work in households, nor does it capture the social value of activities, such as health, the value of security, or that of free goods delivered online. For example, unpaid care work done largely by women is often invisible and undervalued. This was particularly pronounced during the COVID-19 pandemic, when women spent an estimated 512 billion hours globally doing additional unpaid childcare work that sustained our economies.</td></tr><tr class="table-light" name="word/document.xml|369416b080"><td>GDP does not offer a lens on distributions to identify and address inequalities, including between women and men, refugees, migrants, minorities, nor does it account for the targeted interventions needed to address the needs of people facing intersectional forms of inequality. GDP's social and environmental exclusion perpetuates the misallocation of resources in ways that further exacerbate inequalities.</td></tr><tr class="table-dark text-dark" name="word/document.xml|025522bb6c"><td>Due to serious compilation and measurement challenges GDP still often insufficiently captures new economic phenomena, for instance digitalization and the use of free digital services, the use of <span id="SDMU" class="replacement automatic replace tentative" name="crypto assets | cryptoassets"><span class="from_repl from_initial">crypto assets</span> <span class="to_repl to_initial">cryptoassets</span></span> and the development of data. These particular issues are being addressed in the current discussion of the 2025 revision of the <span id="B3XL" class="replacement automatic replace tentative" name="SNA | Somali National Army"><span class="from_repl from_initial">SNA</span> <span class="to_repl to_initial">Somali National Army</span></span> .</td></tr><tr class="table-light" name="word/document.xml|5df3b9cbe3"><td>Over time, it has become clear that there are intrinsic limitations on what GDP can measure. It does not fully capture the complexities of the urgent challenges we face today. Despite these evident shortcomings, GDP continues to be used - or misused - as the benchmark for important national and international policy settings, <span id="ESU9" class="replacement automatic replace tentative" name="particularly | in particular"><span class="from_repl from_initial">particularly</span> <span class="to_repl to_initial">in particular</span></span> in respect of development financing. This notably includes criteria of eligibility for Official Development Assistance (ODA) and decisions on debt relief and concessional financing, as well as matters such as graduation from Least Developed Country (LDC) status. This excessive dependence on GDP has created damaging bottlenecks and grave inequities in the functioning of the international financial architecture with serious consequences for the sustainable development of all countries <span id="2Z0N" class="replacement automatic delete tentative" name="countries, and | countries and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and for Middle-Income Countries and Small Island Developing States, in particular.</td></tr><tr class="table-dark text-dark" name="word/document.xml|1a8fd07785"><td></td></tr><tr class="table-light" name="word/document.xml|2dfadfd68a"><td>These problems need to be addressed urgently, including through the application of the Beyond GDP metrics that I propose. The use of metrics in the context of financial decision <span id="52VB" class="replacement automatic insert tentative" name="decision making | decision-making"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">-</span></span> making will be dealt with more fully in the forthcoming Policy Brief on the International Financial Architecture. This will also need to build upon the forthcoming recommendations of the High-Level Panel on the Development of a Multidimensional Vulnerability Index (MVI), which can also contribute importantly to correcting the <span id="4QGK" class="replacement automatic replace tentative" name="longstanding | long-standing"><span class="from_repl from_initial">longstanding</span> <span class="to_repl to_initial">long-standing</span></span> inequitable treatment resulting from the uncritical use of GDP as a predominant policy benchmark.</td></tr><tr class="table-dark text-dark" name="word/document.xml|0dd874e804"><td>Going Beyond GDP, to accurately measure what is valuable, and to enhance decision-making in the best interests of people, the planet, and the future, can fundamentally change the way governments make policies and spur investments so as to accelerate achievement of the SDGs and leave no one behind. Figure 1 illustrates how going beyond GDP can build on and support achievement of the <span id="RMQE" class="replacement automatic replace tentative" name="SDGs | Sustainable Development Goals"><span class="from_repl from_initial">SDGs</span> <span class="to_repl to_initial">Sustainable Development Goals</span></span> .</td></tr><tr class="table-light" name="word/document.xml|bf7d3cdf1a"><td>There are a number of opportunities ahead of us to identify and develop Beyond GDP metrics. The <span id="JKR2" class="replacement automatic replace tentative" name="SNA | Somali National Army"><span class="from_repl from_initial">SNA</span> <span class="to_repl to_initial">Somali National Army</span></span> , in which GDP is embedded, was revised in 1968, 1993, and 2008, and is currently being revised again with a view to completion by 2025. The effort to go beyond GDP should capitalize on the opportunity of this update to the <span id="42YD" class="replacement automatic replace tentative" name="SNA | Somali National Army"><span class="from_repl from_initial">SNA</span> <span class="to_repl to_initial">Somali National Army</span></span> , which will be focused on the measurement of digitalization and globalization, to better account for <span id="OYKS" class="replacement automatic replace tentative" name="wellbeing | well-being"><span class="from_repl from_initial">wellbeing</span> <span class="to_repl to_initial">well-being</span></span> and sustainability, including distributional aspects, the informal economy <span id="6E4D" class="replacement automatic delete tentative" name="economy, and | economy and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and unpaid household service work.</td></tr><tr class="table-dark text-dark" name="word/document.xml|02f3fc5c80"><td>In addition, many countries are developing statistics for the System of Environmental-Economic Accounting to <span id="YX36" class="replacement automatic replace tentative" name="analyze | analyse"><span class="from_repl from_initial">analyze</span> <span class="to_repl to_initial">analyse</span></span> and measure not only how the economy impacts the environment, but also how ecosystems function and contribute directly to our well-being. Current <span id="LRLE" class="replacement automatic replace tentative" name="socio-economic | socioeconomic"><span class="from_repl from_initial">socio-economic</span> <span class="to_repl to_initial">socioeconomic</span></span> statistics <span id="FJDT" class="replacement automatic delete tentative" name="statistics, and | statistics and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and data from population and housing censuses, compiled based on international statistical standards, should also be part of the foundations to go beyond GDP.</td></tr><tr class="table-light" name="word/document.xml|326d54e539"><td>In addition to compiling headline indicators, Member States will need to maintain and develop comprehensive national data ecosystems to analyse and provide disaggregated data to assess the achievement of the principle of leaving no one behind. Indeed, today's multiple crises, including the escalating climate emergency, have revealed that our statistical systems need to move away from current, traditional ways of operating to be able to effectively support countries’ sustainable development and transformation agendas.</td></tr><tr class="table-dark text-dark" name="word/document.xml|33c5b6a68b"><td>Figure I. Moving beyond GDP to achieving the <span id="6WTB" class="replacement automatic replace tentative" name="SDGs | Sustainable Development Goals"><span class="from_repl from_initial">SDGs</span> <span class="to_repl to_initial">Sustainable Development Goals</span></span></td></tr><tr class="table-light" name="word/document.xml|054f5c4b05"><td></td></tr><tr class="table-dark text-dark" name="word/document.xml|4b4bfbd71b"><td></td></tr><tr class="table-light" name="word/document.xml|5e506851bd"><td>Figure 1: Moving beyond GDP to Value what counts” will contribute to achieving the <span id="0YBL" class="replacement automatic replace tentative" name="SDGs | Sustainable Development Goals"><span class="from_repl from_initial">SDGs</span> <span class="to_repl to_initial">Sustainable Development Goals</span></span> and vice versa</td></tr><tr class="table-dark text-dark" name="word/document.xml|02e56fa0c7"><td>A Framework to Value What Counts</td></tr><tr class="table-light" name="word/document.xml|87e9faa272"><td>Moving beyond GDP is fundamental to building an economic system that gives value to what counts – human wellbeing now, in the future and for everyone. Effectively valuing what counts can have a transformative impact by better informing decision-making for a more just, inclusive <span id="JY2V" class="replacement automatic delete tentative" name="inclusive, and | inclusive and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and sustainable development path.</td></tr><tr class="table-dark text-dark" name="word/document.xml|bb938a6523"><td>To this end, I present three proposals.</td></tr><tr class="table-light" name="word/document.xml|e101b64998"><td>A Strong Political Commitment</td></tr><tr class="table-dark text-dark" name="word/document.xml|dc2d399303"><td>First, I propose that Member States make an explicit commitment to go Beyond GDP by agreeing a conceptual value framework, firmly anchored in the 2030 Agenda <span id="J96X" class="replacement automatic delete tentative" name="Agenda for Sustainable Development, | Agenda,"><span class="from_repl from_initial">for Sustainable Development</span> <span class="to_repl to_initial"></span></span> , by the time of the Summit of the Future in 2024. The HLCP report provides a basis for this conceptual framework. That report draws on research carried out across the <span id="23I3" class="replacement automatic replace tentative" name="UN | United Nations"><span class="from_repl from_initial">UN</span> <span class="to_repl to_initial">United Nations</span></span> system and beyond, including the discussions on GDP – its strength, limitations and uses – and the identification of issues at stake to formulate a framework for policy and metrics.</td></tr><tr class="table-light" name="word/document.xml|04a8f042fe"><td>This framework to ‘Value What Counts’ should be designed to achieve three main outcomes</td></tr><tr class="table-dark text-dark" name="word/document.xml|74baa07024"><td>Well-being and agency: putting the focus on people and promote meaningful participation to ensure decisions reflect people's needs and enable everyone's contribution to transformational change;</td></tr><tr class="table-light" name="word/document.xml|4ba9cdfce3"><td>Respect for life and the planet: safeguarding the planet and ensure possibilities for life and well-being in the future; and</td></tr><tr class="table-dark text-dark" name="word/document.xml|fe4508461e"><td>Reduced inequalities and greater solidarity: leading to more equal distribution of well-being.</td></tr><tr class="table-light" name="word/document.xml|d22907d05c"><td>The framework to ‘Value What Counts’ should also consider a path of transformation through three additional elements:</td></tr><tr class="table-dark text-dark" name="word/document.xml|f1441538d4"><td>Participatory governance and stronger institutions: steering us towards outcomes ensuring equitable, inclusive <span id="MKQF" class="replacement automatic delete tentative" name="inclusive, and | inclusive and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and safe societal conditions empowering everyone to participate, contribute, and benefit safely and effectively (social dimension);</td></tr><tr class="table-light" name="word/document.xml|1d1ec41787"><td>Innovative and ethical economies: serving people and the planet through innovation to find collective solutions to our challenges, with responsible and ethical actions to deliver positive outcomes that uphold people's rights (economic dimension);</td></tr><tr class="table-dark text-dark" name="word/document.xml|fb31861ba1"><td>From vulnerability to resilience: focusing on our interaction with the natural and built environment to strengthen preparedness and ensure well-being given multiple risks and uncertainties (environmental dimension).</td></tr><tr class="table-light" name="word/document.xml|bdcc0fddd0"><td>A Robust Technical Scientific Process</td></tr><tr class="table-dark text-dark" name="word/document.xml|ccebfee053"><td>Second, the political commitment to develop a conceptual framework to ‘Value What Counts’ must go hand in hand with a technical scientific process to develop the metrics that inform this framework. In this regard, I propose the establishment of a High-Level Expert Group of independent experts with a mandate to produce an initial value dashboard of a limited number of key indicators (ideally not more than 10-20 indicators) of Beyond GDP by March 2024. This should be presented for Member States’ consideration in preparation for the Summit of the Future.</td></tr><tr class="table-light" name="word/document.xml|c90d28d81a"><td>This High-Level Expert Group should be multidisciplinary, including national and international experts with a spectrum of policy-makers, statisticians, civil society <span id="BS94" class="replacement automatic delete tentative" name="society, and | society and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and academia. The technical work of selecting and verifying data indicators should be undertaken through the <span id="O924" class="replacement automatic delete tentative" name="the UN Statistical | the Statistical"><span class="from_repl from_initial">UN</span> <span class="to_repl to_initial"></span></span> Statistical Commission, that also hosts the SDG indicator framework, to ensure robust and scientific accuracy of the metrics.</td></tr><tr class="table-dark text-dark" name="word/document.xml|f1fac8bca1"><td>One of the strengths of GDP is its conciseness. While GDP is anything but simple, it manages to summarize information in an intuitive manner that tells a story. The framework to ‘Value What Counts’ must retain these strengths. It must be concise, widely accepted, comparable, and applicable to decision-making.</td></tr><tr class="table-light" name="word/document.xml|8f7b37e376"><td>At the same time, well-being, equality <span id="W3J8" class="replacement automatic delete tentative" name="equality, and | equality and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and environmental sustainability are complex multidimensional phenomena that cannot be addressed by a single summary indicator, like GDP. This warrants the development of a broader measurement framework to monitor and analyse the multiple aspects of progress and enable a better understanding of trade-offs and consequences.</td></tr><tr class="table-dark text-dark" name="word/document.xml|dc9633fa5f"><td>Therefore, the aim should not be to establish a single composite indicator of ‘Beyond GDP’. An indicator of everything would summarize too much and reveal too little to be able to adequately inform policy. Instead, I propose the selection of a set of core metrics that would be assessed, developed and selected through a scientific, multidisciplinary process <span id="JR0K" class="replacement automatic delete tentative" name="process, and | process and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and which would need to be:</td></tr><tr class="table-light" name="word/document.xml|977e5ea77b"><td>comparable across time and countries, well-established and trusted;</td></tr><tr class="table-dark text-dark" name="word/document.xml|2dccdf1acf"><td>country owned;</td></tr><tr class="table-light" name="word/document.xml|683f10b527"><td>universally applicable;</td></tr><tr class="table-dark text-dark" name="word/document.xml|8ed8f5899b"><td>able to convey strong and clear messages that are actionable and intuitive;</td></tr><tr class="table-light" name="word/document.xml|b042e60662"><td>scientifically robust and statistically sound; and</td></tr><tr class="table-dark text-dark" name="word/document.xml|43f4c3acb5"><td>iterative and dynamic based on what exists, while adding new indicators, as relevant.</td></tr><tr class="table-light" name="word/document.xml|326fbd44b9"><td>The methodology and process to develop these indicators should build upon current capacities and ongoing work and incorporate appropriately the results of the High-Level Panel on the Development of a Multidimensional Vulnerability Index (MVI), as well as existing indices and indicators including the <span id="SRYU" class="replacement automatic replace tentative" name="SDG | Sustainable Development Goal"><span class="from_repl from_initial">SDG</span> <span class="to_repl to_initial">Sustainable Development Goal</span></span> indicators, the Human Development Index and other relevant indicators which consider human rights and gender equality.</td></tr><tr class="table-dark text-dark" name="word/document.xml|1d5948bb23"><td>A Major Capacity <span id="V25H" class="replacement automatic insert tentative" name="Capacity Building | Capacity-Building"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">-</span></span> Building Initiative</td></tr><tr class="table-light" name="word/document.xml|d7395b89da"><td>Third, I propose a major strengthening of <span id="EY8V" class="replacement automatic replace tentative" name="UN | United Nations"><span class="from_repl from_initial">UN</span> <span class="to_repl to_initial">United Nations</span></span> support to countries in stepping up statistical capacity development and enabling country-owned use and reporting of progress beyond GDP. Such national capacity development will also respond to the global challenge to develop and propose new metrics to complement GDP in a participatory process and to fill persisting gaps in SDG reporting. GDP succeeded in becoming universally recognized and the main benchmark to measure a country's economic progress and the value of its domestic production of goods and services because it was accompanied by massive investments and support to develop statistical capacity at the national level. Going Beyond GDP will require comparably ambitious international investment in capacity development if it is to be successful.</td></tr><tr class="table-dark text-dark" name="word/document.xml|cb8e246608"><td>The <span id="TJAL" class="replacement automatic replace tentative" name="UN System | United Nations system"><span class="from_repl from_initial">UN System</span> <span class="to_repl to_initial">United Nations system</span></span> must support statistical systems to shift priorities towards new metrics, including more comprehensive accounting of stocks and flows, distributions, sustainability and intergenerational perspectives, vulnerabilities <span id="DRS5" class="replacement automatic delete tentative" name="vulnerabilities, and | vulnerabilities and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and aspects related to innovation, governance, stability, participation <span id="009J" class="replacement automatic delete tentative" name="participation, and | participation and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and human rights.</td></tr><tr class="table-light" name="word/document.xml|42b2dc791a"><td>In addition to a dashboard, Member States will need to be empowered to have comprehensive datasets that enable disaggregation. As metrics will need to develop beyond today's needs, they cannot be limited by the data we have today. Building strong and dynamic statistical ecosystems and strong statistical capacity will also be key to enabling agility to measure what counts as and when new challenges arise.</td></tr><tr class="table-dark text-dark" name="word/document.xml|0e95d7f71a"><td>With the support of adequate capacity <span id="FBKM" class="replacement automatic insert tentative" name="capacity building | capacity-building"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">-</span></span> building, the dashboard will eventually form a high-quality, widely available, and comparable body of information based on global and national official statistics <span id="VP2X" class="replacement automatic delete tentative" name="statistics, and | statistics and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and new sources and technologies.</td></tr><tr class="table-light" name="word/document.xml|dc54a3978f"><td>The pandemic challenged statistical offices and generated innovation, affecting the way in which they collect data from multiple sources, including big data and geospatial data <span id="NPI3" class="replacement automatic delete tentative" name="data, and | data and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and how they share and compile data to provide timely insights. Many statistical offices serve as national ‘data stewards’ ensuring that data is used as an asset to society. New capacity development efforts should ensure innovation and that the use of new technologies is accessible to all countries.</td></tr><tr class="table-dark text-dark" name="word/document.xml|eebccda207"><td>Valuing What Counts: Recommendations for Member States</td></tr><tr class="table-light" name="word/document.xml|b9715cfb61"><td>Action to go Beyond GDP must be driven by a clear and shared political commitment and underpinned by strengthened technical capacity and expertise.</td></tr><tr class="table-dark text-dark" name="word/document.xml|a3f899579b"><td></td></tr><tr class="table-light" name="word/document.xml|544d9cff6e"><td>I urge Member States to:</td></tr><tr class="table-dark text-dark" name="word/document.xml|ae2ce3a819"><td>Confirm their political commitment to develop a conceptual value framework on Beyond GDP anchored in the 2030 Agenda <span id="542W" class="replacement automatic delete tentative" name="Agenda for Sustainable Development, | Agenda,"><span class="from_repl from_initial">for Sustainable Development</span> <span class="to_repl to_initial"></span></span> ,</td></tr><tr class="table-light" name="word/document.xml|a23a4cf100"><td>This framework should be designed to achieve the following outcomes:</td></tr><tr class="table-dark text-dark" name="word/document.xml|10f6fcfca8"><td>Wellbeing and agency</td></tr><tr class="table-light" name="word/document.xml|1aa27b8937"><td>Respect for life and the planet</td></tr><tr class="table-dark text-dark" name="word/document.xml|e9565e04c5"><td>Reduced inequalities and greater solidarity</td></tr><tr class="table-light" name="word/document.xml|b0c1d7911c"><td>It should be based on the following elements to achieve a transformative process of change:</td></tr><tr class="table-dark text-dark" name="word/document.xml|2b2690952d"><td>Participatory governance and stronger institutions</td></tr><tr class="table-light" name="word/document.xml|2c20a541e6"><td>Innovative and ethical economies</td></tr><tr class="table-dark text-dark" name="word/document.xml|02ae65a12c"><td>From vulnerability to resilience</td></tr><tr class="table-light" name="word/document.xml|d48a613248"><td>Establish an independent High-level Expert Group to elaborate a value dashboard of a limited number of key indicators of <span id="JLR8" class="replacement automatic replace tentative" name="Beyond GDP | beyond gross domestic product"><span class="from_repl from_initial">Beyond GDP</span> <span class="to_repl to_initial">beyond gross domestic product</span></span> (not more than 10-20), taking the HLCP report, ‘Valuing What Counts: United Nations System Contribution on Progress Beyond Gross Domestic Product’, as a starting point, and to present the outcomes by March 2024 for Member States’ consideration in preparation for the Summit of the Future</td></tr><tr class="table-dark text-dark" name="word/document.xml|2aa36b334d"><td>This High-Level Expert Group should:</td></tr><tr class="table-light" name="word/document.xml|f6c478f6ce"><td>be multidisciplinary and include experts across the spectrum of policy makers, statisticians, civil society and academia.</td></tr><tr class="table-dark text-dark" name="word/document.xml|32dc87ab89"><td>Ensure the methodology and selection of indicators builds upon current capacities, the ongoing work to develop the Multidimensional Vulnerability Index (MVI), and existing indices and indicators, including the <span id="9LG6" class="replacement automatic replace tentative" name="SDG | Sustainable Development Goal"><span class="from_repl from_initial">SDG</span> <span class="to_repl to_initial">Sustainable Development Goal</span></span> indicators, the Human Development Index and relevant thematic indicators which consider human rights and gender equality.</td></tr><tr class="table-light" name="word/document.xml|c86032d4c0"><td>Resource and strengthen statistical capacity-building and data collection, in particular at the national-level, to support <span id="BG9Q" class="replacement automatic replace tentative" name="Beyond GDP | beyond gross domestic product"><span class="from_repl from_initial">Beyond GDP</span> <span class="to_repl to_initial">beyond gross domestic product</span></span> , as well as filling gaps in SDG reporting. The going Beyond GDP process will require significant investments in data and statistical capacities, <span id="O61G" class="replacement automatic replace tentative" name="particularly | in particular"><span class="from_repl from_initial">particularly</span> <span class="to_repl to_initial">in particular</span></span> at the national-level <span id="VG1U" class="replacement automatic delete tentative" name="level, and | level and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and in developing countries. In addition to compiling headline indicators, Member States will need to maintain and develop comprehensive national data ecosystems to analyse distributions, disaggregation, and the achievement of the principle of leaving no one behind.</td></tr><tr class="table-dark text-dark" name="word/document.xml|341022fca6"><td>Conclusion</td></tr><tr class="table-light" name="word/document.xml|a309d84f47"><td>Discussions on going Beyond GDP have been ongoing for decades. Now is the time for action. Primarily relying on GDP as a metric of progress does not accurately reflect the world as it is – nor the world that we want future generations to inhabit. We need a paradigm shift in what we measure as progress so that we can capture data on the activities and outcomes that a society truly values – and then use them to better inform our policy and financial decisions. We have an opportunity to shape our future into one that is more equal and resilient to crises, and where the benefits of social and economic progress are shared by all. By moving <span id="VI26" class="replacement automatic replace tentative" name="Beyond GDP | beyond gross domestic product"><span class="from_repl from_initial">Beyond GDP</span> <span class="to_repl to_initial">beyond gross domestic product</span></span> , we can measure what we truly value, what we mean by progress, and on that basis, how we distribute resources and commit to real change.</td></tr><tr class="table-dark text-dark" name="word/document.xml|1c7ea5e7c4"><td></td></tr><tr class="table-light" name="word/footnotes.xml|c31fab1a96"><td></td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|b63c2c5e97"><td></td></tr><tr class="table-light" name="word/footnotes.xml|4c3b837333"><td>Our Common Agenda report paragraphs 38 and 39. United Nations et al. (2021).</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|e06ecd0a86"><td>For example: The Brundtland Report (1987), the Stiglitz, Sen, and Fitoussi report (2009), and <span id="EM2Z" class="replacement automatic insert tentative" name="and OECD | and the Organization for Economic Cooperation and Development (OECD"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">the Organization for Economic Cooperation and Development (</span></span> OECD's listing of 500 initiatives to go beyond GDP (2019).</td></tr><tr class="table-light" name="word/footnotes.xml|bf316b2e38"><td>Catherine D’Ignazio and Lauren F. Klein. 2020. Data Feminism., Cambridge, Massachusetts and London, England: The MIT Press, ISBN: 978-0-262-04400-4</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|2b6b3441e8"><td></td></tr><tr class="table-light" name="word/footnotes.xml|e6433cb761"><td>“Valuing What Counts – UN System-wide Contribution on Beyond GDP.”</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|ee1e20e87f"><td>System of National Accounts 2008, at:</td></tr><tr class="table-light" name="word/footnotes.xml|13245a0904"><td>System of National Accounts 2008, at: https://unstats.un.org/unsd/nationalaccount/sna2008.asp System of Environmental-Economic Accounting, at: , SEEA Ecosystem Accounting, at:</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|fca8d404d9"><td>UNDP 1990, at:</td></tr><tr class="table-light" name="word/footnotes.xml|02bae29a49"><td>LDC Identification Criteria and Indicators, at:</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|711a9555d2"><td></td></tr><tr class="table-light" name="word/footnotes.xml|1ad1c911a9"><td>See, Ghosh, 2022, Let's Count What Really Matters.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|672df633e4"><td>UN <span id="NDD6" class="replacement automatic insert tentative" name="UN Women | UN-Women"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">-</span></span> Women, 2022, HYPERLINK "https://www.unwomen.org/en/digital-library/publications/2022/09/progress-on-the-sustainable-development-goals-the-gender-snapshot-2022 " Progress on the Sustainable Development Goals (SDG): The Gender Snapshot 2022.</td></tr><tr class="table-light" name="word/footnotes.xml|7f11b85192"><td>Source: UN Data and <span id="ZQVG" class="replacement automatic replace tentative" name="SDG | Sustainable Development Goal"><span class="from_repl from_initial">SDG</span> <span class="to_repl to_initial">Sustainable Development Goal</span></span> indicators, HYPERLINK "https://unstats.un.org/sdgs/report/2022/" \hThe Sustainable Development Goals Report 2022, and references in the HYPERLINK "https://unsceb.org/valuing-what-counts-united-nations-system-wide-contribution-beyond-gross-domestic-product-gdp \hUN-system wide contribution on Valuing What Counts</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|0f8d552a13"><td>Based on principles outlined in the HLCP report <span id="EYVW" class="replacement automatic delete tentative" name="report, and | report and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and learning from the human development approach, Brundtland (1987) Report, and the aspirations of the Rio and Rio+20 conferences as well as the 2030 Agenda.</td></tr></tbody>
+  </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>        
+      </div>
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+
