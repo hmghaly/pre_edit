@@ -109,12 +109,15 @@ footer {
     	async function submit_data() {
     		console.log("submit data")
             upload_dict=await get_form_vals("upload_form")
+            $$("pre_edit_output").innerHTML=""
+            $$("loading_spinner").hidden=false
             console.log(upload_dict)
 
             upload_response_dict=await post_data_async("pre_edit_api",upload_dict)
             console.log(upload_response_dict)
 
             $$("pre_edit_output").innerHTML=upload_response_dict["pre_edited_html"]
+            $$("loading_spinner").hidden=true
             
             return 
 
@@ -154,7 +157,9 @@ footer {
 
     <div class="m-3">
       <label for="input_text" class="form-label">Input Text:</label>
-      <textarea class="form-control upload_form" id="input_text" name="text" rows="3"></textarea>
+      <textarea class="form-control upload_form" id="input_text" name="text" rows="3">
+we recognise the UN missions in DRC and CAR, Chad and Sudan, as well as Syria in our long term planning, and will develop a roadmap in the long term for UN-Women
+      </textarea>
         <label for="model_select" class="form-label">Select Model:</label>
         <select id="model_select" class="form-select mb-2 upload_form" aria-label="Default select example" name="selected_model">
           <option value="neural_model1">Neural Model 1</option>
@@ -169,6 +174,10 @@ footer {
     
     <div class="m-3">
         <h5>Output</h5>
+        <div id="loading_spinner" class="spinner-border text-primary" role="status" hidden>
+          <span class="visually-hidden">Loading...</span>
+        </div>
+
         <div id="pre_edit_output"></div>
         <h5>Edits</h5>
         <table id="edit_list_table"></table>
