@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://hmghaly.github.io/script.js"></script>
+    <script src="assets/js/main.js"></script>
+
+    <title>AI Pre-editing Assistant - Input</title>
+
+    <style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+    <script type="text/javascript">
+        //var data_dict={}
+    	function sleep(duration){
+    		return new Promise(resolve => setTimeout(resolve, duration));
+    	}
+    	async function submit_data() {
+    		console.log("submit data")
+            upload_dict=await get_form_vals("upload_form")
+            console.log(upload_dict)
+
+            upload_response_dict=await post_data_async("pre_edit_api",upload_dict)
+            console.log(upload_response_dict)
+
+            $$("pre_edit_output").innerHTML=upload_response_dict["pre_edited_html"]
+            
+            return 
+
+      //       $$("progress_div").innerHTML=""
+    		// $$("progress_div").innerHTML+="uploading file <br>"
+
+
+    		//await sleep(1000)
+    		//await new Promise(resolve => setTimeout(resolve, 1000));
+    		$$("progress_div").innerHTML+="file uploaded successfully ✅ <br>"
+    		$$("progress_div").innerHTML+="started processing  <br>"
+
+            processing_response_dict=await post_data_async("process",upload_response_dict)
+            console.log(processing_response_dict)
+
+
+    		//await sleep(1000)
+    		//await new Promise(resolve => setTimeout(resolve, 1000));
+    		$$("progress_div").innerHTML+="file processed successfully ✅ <br>"
+    		$$("progress_div").innerHTML+="creating interface link <br>"
+    		//await sleep(1000)
+    		$$("progress_div").innerHTML+="interface link created successfully ✅ <br>"
+            html_fpath=processing_response_dict["cur_html_fpath"]
+            link='<a href="_href_" target="new">Interface Link</a>'.replace("_href_","interface?link="+html_fpath)
+    		
+    		//await new Promise(resolve => setTimeout(resolve, 1000));
+    		$$("progress_div").innerHTML+="You will be redirected to interface page. If Not, go to: "+link
+
+
+    	}
+
+    </script>
+  </head>
+  <body>
+    <h1 class="text-center">Simple Pre-editing interface</h1>
+    <p class="m-2 text-center">Input text below for pre-editing</p>
+
+    <div class="m-3">
+      <label for="input_text" class="form-label">Input Text:</label>
+      <textarea class="form-control upload_form" id="input_text" name="text" rows="3"></textarea>
+        <label for="model_select" class="form-label">Select Model:</label>
+        <select id="model_select" class="form-select mb-2 upload_form" aria-label="Default select example" name="selected_model">
+          <option value="neural_model1">Neural Model 1</option>
+          <option value="non_contexual_model">Non-Contexual Model (High Precision - Low Recall)</option>
+          <option value="noisy_model">Noisy Model (High Recall - Low Precision)</option>
+        </select>
+
+    </div>
+    <div class="text-center">
+        <button type="button" class="btn btn-primary btn-lg" onclick="submit_data()">Pre-edit Text</button>    
+    </div>
+    
+    <div class="m-3">
+        <h5>Output</h5>
+        <div id="pre_edit_output"></div>
+    </div>
+
+
+
+    <!-- Optional JavaScript; choose one of the two! -->
+
+    <!-- Option 1: Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+    <!-- Option 2: Separate Popper and Bootstrap JS -->
+    <!--
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+    -->
+  </body>
+</html>
+
