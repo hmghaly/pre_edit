@@ -62,7 +62,7 @@ def check_repl():
     return json.dumps(cur_dict) 
 
 @app.route('/dashboard',methods = ['POST', 'GET'])
-def pre_edit_interface():
+def dashboard():
     fopen=open("templates/dashboard_template.html")
     content=fopen.read()
     fopen.close()
@@ -70,7 +70,7 @@ def pre_edit_interface():
 
 
 @app.route('/input',methods = ['POST', 'GET'])
-def pre_edit_interface():
+def input_interface():
     fopen=open("templates/input_template.html")
     content=fopen.read()
     fopen.close()
@@ -89,7 +89,7 @@ def pre_edit_api():
     freq_threshold0=posted_data_dict.get("freq_threshold",None)
     wt_threshold0=posted_data_dict.get("wt_threshold",0.3)
     cur_dict["text"]=text0
-    pre_edited_html,valid_repl=pre_edit_html(text0,loaded_model,refined_first_token_dict,pred_threshold=wt_threshold0,,freq_threshold=freq_threshold0)
+    pre_edited_html,valid_repl=pre_edit_html(text0,loaded_model,refined_first_token_dict,pred_threshold=wt_threshold0,freq_threshold=freq_threshold0)
     cur_dict["pre_edited_html"]=pre_edited_html
     cur_dict["repl_list"]=valid_repl
     return json.dumps(cur_dict)
@@ -129,8 +129,6 @@ def process():
         #cur_docx_path="uploaded/2212742_Case_Study_Handbook_ALK_part_1.docx"
         
         cur_docx_path=posted_data_dict.get("fpath")
-        #new_edit_pre_edit_list,all_repl_inst_list,analysis_dict=analyze_pre_edit_docx(cur_docx_path,loaded_model=None,refined_first_token_dict,pred_threshold=0.3)
-        #new_edit_pre_edit_list,all_repl_inst_list,analysis_dict=analyze_pre_edit_docx(cur_docx_path,None,no_context_first_token_dict,pred_threshold=0.3)
         new_edit_pre_edit_list,all_repl_inst_list,analysis_dict=analyze_pre_edit_docx(cur_docx_path,loaded_model,refined_first_token_dict,pred_threshold=0.3)
         #new_edit_list=[(v[1],v[4],v[-1]) for v in new_edit_pre_edit_list]
         new_edit_list=[(v[0],v[-1]) for v in new_edit_pre_edit_list]
@@ -139,7 +137,7 @@ def process():
         if not cur_html_fname.endswith(".html"): cur_html_fname+=".html"
         cur_html_fpath=os.path.join(processing_dir,cur_html_fname)
         cur_template_fpath="templates/pre-editing_table_template_controls.html"
-        edit_list2html(new_edit_list,cur_html_fpath,template_fpath=cur_template_fpath)
+        edit_list2html(new_edit_list,cur_html_fpath,template_fpath=cur_template_fpath,headers=["Output"])
         cur_dict=copy.deepcopy(posted_data_dict)
         cur_dict["cur_html_fpath"]=cur_html_fpath
         #posted_data=posted_data.decode("utf-8")
