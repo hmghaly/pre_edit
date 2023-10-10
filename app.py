@@ -61,12 +61,21 @@ def check_repl():
     # except: output=json.dumps(cur_dict) 
     return json.dumps(cur_dict) 
 
+@app.route('/list_edits',methods = ['POST', 'GET'])
+def list_edits():
+    cur_list=[]
+    repl_log_fopen=open(repl_log_fpath)
+    for line0 in repl_log_fopen:
+        cur_list.append(json.loads(line0))
+    return json.dumps(cur_list)
+
+
 @app.route('/dashboard',methods = ['POST', 'GET'])
 def dashboard():
-    fopen=open("templates/dashboard_template.html")
-    content=fopen.read()
-    fopen.close()
-    return content
+    # fopen=open("templates/dashboard_template.html")
+    # content=fopen.read()
+    # fopen.close()
+    return read_file("templates/dashboard_template.html") #content
 
 
 @app.route('/input',methods = ['POST', 'GET'])

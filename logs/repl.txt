@@ -92,3 +92,9 @@
 {"decision": "accept_all", "all": true, "affected": 1, "repl": "and OECD | and the Organization for Economic Cooperation and Development (OECD", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:26 2023"}
 {"decision": "accept_all", "all": true, "affected": 1, "repl": "UN Women | UN-Women", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:27 2023"}
 {"decision": "accept_all", "all": true, "affected": 1, "repl": "report, and | report and", "link": "processing/2306666_A77CRP1Add3_JS.html", "time": "Fri Oct  6 18:57:27 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "then-President | then President", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:29 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "crime, and | crime and", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:33 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "security, and \u21e8 security and", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:42 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "the United Nations Security | the Security", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:48 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "under the \u21e8 under the Charter of the", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:54 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "Daesh | Da\u2019esh", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:58 2023"}
