@@ -50,9 +50,14 @@
 
     	}
 
+        async function init(){
+            response0=await post_data_async("list_edits",{})
+            console.log(response0)
+        }
+
     </script>
   </head>
-  <body>
+  <body onload="init()">
     <h1 class="text-center">Dashboard</h1>
     <p class="m-2 text-center">Analyzing the output of pre-editing for human evaluation. </p>
 
