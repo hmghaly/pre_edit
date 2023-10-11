@@ -53,7 +53,50 @@
         async function init(){
             response0=await post_data_async("list_edits",{})
             console.log(response0)
+            cur_headers=["Decision","Replacement", "Affected","Document"]
+            content_list=[]
+            for (item0 of response0){
+                decicion0=item0["decision"]
+                repl0=item0["repl"]
+                affected0=item0["affected"]
+                url0=item0["link"]
+                link_template0='<a href="_url0_" target="new">Link</a>'
+                link0=repl(link_template0,"_url0_",url0)
+                content_list.push([decicion0,repl0,affected0,link0])
+            }
+
+            //content_list=[["Adam","aa@bb.cc"],["Adam22","aa33@bb.cc"]]
+            
+            fill_table_all("dashboard_table",content_list,headers=cur_headers)
         }
+
+        // function fill_table(table_obj,table_content_2d_list,headers){
+        //     table_obj.innerHTML=""
+        // }
+
+        // function fill_table_all(table_id,table_content_list,headers=[]){ //fill table with both headers and rows content
+        //     table_el=$$(table_id)
+        //     table_el.innerHTML=""
+        //     var thead = document.createElement('thead');
+        //     table_el.appendChild(thead);
+
+        //     for (var i=0; i<headers.length; i++) {
+        //         thead.appendChild(document.createElement("th")).
+        //               appendChild(document.createTextNode(headers[i]));
+        //     }
+
+        //     var tbody = document.createElement('tbody');
+        //     table_el.appendChild(tbody);
+
+        //     for (const item0 of table_content_list){
+        //         var row = table_el.insertRow(-1);
+        //         for (const sub_item of item0){
+        //             var cell0 = row.insertCell(-1);
+        //             cell0.innerHTML=str(sub_item)
+        //         }
+        //     }
+        //     return table_el    
+        // }
 
     </script>
   </head>
@@ -75,6 +118,10 @@
 
     <h1 class="text-center">Dashboard</h1>
     <p class="m-2 text-center">Analyzing the output of pre-editing for human evaluation. </p>
+
+    <table class="table table-striped m-3" id="dashboard_table">
+  
+    </table>
 
 
 
