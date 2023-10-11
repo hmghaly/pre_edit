@@ -50,11 +50,33 @@
 
     	}
 
+        async function init(){
+
+        }
+
     </script>
   </head>
-  <body>
+  <body onload="init()">
+    <ul class="nav nav-tabs nav-justified">
+      <li class="nav-item">
+        <a class="nav-link active" href="#">Pre-edit Document</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="input">Pre-edit Text</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="dashboard">Dashboard</a>
+      </li>
+    </ul>
+    <hr>
+
+
     <h1 class="text-center">AI Pre-editing Assistant</h1>
     <p class="m-2 text-center">This tool uses AI to learn from the edits of previous documents, and apply such edits in new documents. </p>
+
+
+    
+    
 
 <div class="m-2">
   <label for="formFileLg" class="form-label">Upload your document (.docx) below for processing.</label>
@@ -66,6 +88,8 @@
 	  <option value="non_contexual_model">Non-Contexual Model (High Precision - Low Recall)</option>
 	  <option value="noisy_model">Noisy Model (High Recall - Low Precision)</option>
 	</select>
+
+
 
 	<div class="d-grid gap-2 col-6 mx-auto">
 	  <button class="btn btn-primary btn-lg" type="button" onclick="submit_data()">Process Document</button>
