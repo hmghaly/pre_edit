@@ -61,7 +61,7 @@
                 repl0=repl(repl_str0,"|","⇨")
                 affected0=item0["affected"]
                 url0=item0["link"]
-                url0="process?link="+url0//.replace("processing/","process?link=")
+                url0="interface?link="+url0//.replace("processing/","process?link=")
                 link_template0='<a href="_url0_" target="new">Link</a>'
                 link0=repl(link_template0,"_url0_",url0)
                 content_list.push([decicion0,repl0,affected0,link0])
