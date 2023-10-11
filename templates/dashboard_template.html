@@ -57,7 +57,8 @@
             content_list=[]
             for (item0 of response0){
                 decicion0=item0["decision"]
-                repl0=item0["repl"]
+                repl_str0=item0["repl"]
+                repl0=repl(repl_str0,"|","⇨")
                 affected0=item0["affected"]
                 url0=item0["link"]
                 link_template0='<a href="_url0_" target="new">Link</a>'
