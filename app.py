@@ -95,10 +95,20 @@ def pre_edit_api():
         posted_data_dict=json.loads(posted_data)    
     default_text="UN missions in DRC and CAR, Chad and Sudan"
     text0=posted_data_dict.get("text",default_text)
+    selected_model0=posted_data_dict.get("selected_model","neural_model1")
+
     freq_threshold0=posted_data_dict.get("freq_threshold",None)
     wt_threshold0=posted_data_dict.get("wt_threshold",0.3)
     cur_dict["text"]=text0
-    pre_edited_html,valid_repl=pre_edit_html(text0,loaded_model,refined_first_token_dict,pred_threshold=wt_threshold0,freq_threshold=freq_threshold0)
+    cur_nn_model=loaded_model
+    cur_token_dict=refined_first_token_dict
+    if selected_model0=="non_contexual_model":
+        cur_nn_model=None
+        cur_token_dict=no_context_first_token_dict
+    elif selected_model0=="noisy_model":
+        cur_nn_model=None
+
+    pre_edited_html,valid_repl=pre_edit_html(text0,cur_nn_model,cur_token_dict,pred_threshold=wt_threshold0,freq_threshold=freq_threshold0)
     cur_dict["pre_edited_html"]=pre_edited_html
     cur_dict["repl_list"]=valid_repl
     return json.dumps(cur_dict)

@@ -98,3 +98,7 @@
 {"decision": "accept", "all": false, "affected": 1, "repl": "the United Nations Security | the Security", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:48 2023"}
 {"decision": "reject", "all": false, "affected": 1, "repl": "under the \u21e8 under the Charter of the", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:54 2023"}
 {"decision": "accept", "all": false, "affected": 1, "repl": "Daesh | Da\u2019esh", "link": "processing/2300082_S20237_KB.html", "time": "Mon Oct  9 13:22:58 2023"}
+{"decision": "reject", "all": false, "affected": 1, "repl": "the UN Charter \u21e8 the Charter", "link": "processing/2300094_S20239_AF.html", "time": "Thu Oct 12 18:43:39 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "programs | programmes", "link": "processing/2300094_S20239_AF.html", "time": "Thu Oct 12 18:43:41 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "social, and | social and", "link": "processing/E-RES-2023-2_HJ.html", "time": "Fri Oct 13 14:57:38 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "protestors | protesters", "link": "processing/E-RES-2023-2_HJ.html", "time": "Fri Oct 13 14:57:43 2023"}
