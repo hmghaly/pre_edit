@@ -107,7 +107,6 @@ def pre_edit_api():
         cur_token_dict=no_context_first_token_dict
     elif selected_model0=="noisy_model":
         cur_nn_model=None
-
     pre_edited_html,valid_repl=pre_edit_html(text0,cur_nn_model,cur_token_dict,pred_threshold=wt_threshold0,freq_threshold=freq_threshold0)
     cur_dict["pre_edited_html"]=pre_edited_html
     cur_dict["repl_list"]=valid_repl
