@@ -85,6 +85,7 @@ def input_interface():
     fopen.close()
     return content
 
+
 #pre_edit(sent_str,nn_model_obj,first_token_dict,pred_threshold=0.5)
 @app.route('/pre_edit_api',methods = ['POST', 'GET'])
 def pre_edit_api():

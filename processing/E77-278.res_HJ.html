@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+var qs_dict=parse_qs()
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
+
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  repl_outcome_dict["link"]=qs_dict["link"]
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  post_data_async("log_repl",repl_outcome_dict)
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>Output</th></tr></thead>
+    <tbody id="data_display_table_body"><tr class="table-light" name="word/header2.xml|ee6c28026a"><td>Human resources management</td></tr><tr class="table-dark text-dark" name="word/header2.xml|e1bcb5284f"><td>DOCVARIABLE "sss1 \*MERGEFORMAT A/RES/77/278</td></tr><tr class="table-light" name="word/document.xml|8b7af79085"><td>Seventy-seventh session</td></tr><tr class="table-dark text-dark" name="word/document.xml|0479fdd37e"><td>Agenda item 143</td></tr><tr class="table-light" name="word/document.xml|86bbb71029"><td>Human resources management</td></tr><tr class="table-dark text-dark" name="word/document.xml|ecbc8807e8"><td>Resolution adopted by the General Assembly on 18 April 2023</td></tr><tr class="table-light" name="word/document.xml|71d014b091"><td>[on the report of the Fifth Committee (A/77/818, para. 6)]</td></tr><tr class="table-dark text-dark" name="word/document.xml|31856f5b5f"><td>77/278. Human resources management</td></tr><tr class="table-light" name="word/document.xml|62bca23b02"><td>The General Assembly,</td></tr><tr class="table-dark text-dark" name="word/document.xml|3c3399bb0d"><td>Recalling Articles 8, 97 and 100 of the Charter of the United Nations,</td></tr><tr class="table-light" name="word/document.xml|46a3888879"><td>Recalling also Article 101 of the Charter <span id="E41J" class="replacement automatic insert tentative" name="Charter, | Charter of the United Nations,"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">of the United Nations</span></span> , which governs the appointment, employment and recruitment of staff,</td></tr><tr class="table-dark text-dark" name="word/document.xml|d48191e989"><td>Recalling further its resolutions 42/220 A of 21 December 1987, 49/222 A of 23 December 1994, 49/222 B of 20 July 1995, 51/226 of 3 April 1997, 52/219 of 22 December 1997, 53/221 of 7 April 1999, 55/258 of 14 June 2001, 57/305 of 15 April 2003, 59/266 of 23 December 2004, 59/287 of 13 April 2005, 60/1 of 16 September 2005, 60/238 of 23 December 2005, 60/254 of 8 May 2006, 60/260 of 8 May 2006, 61/244 of 22 December 2006, 62/247 of 3 April 2008, 63/250 of 24 December 2008, 65/247 of 24 December 2010, 66/234 of 24 December 2011, 67/255 of 12 April 2013, 68/252 of 27 December 2013, 68/265 of 9 April 2014, 70/244 of 23 December 2015 and 71/263 of 23 December 2016 as well as its other relevant resolutions and decisions,</td></tr><tr class="table-light" name="word/document.xml|ba387235ef"><td>Having considered the relevant reports of the Secretary-General on human resources management submitted to the General Assembly and the related reports of the Advisory Committee <span id="RQX2" class="replacement automatic delete tentative" name="Committee on Administrative and Budgetary Questions, | Committee,"><span class="from_repl from_initial">on Administrative and Budgetary Questions</span> <span class="to_repl to_initial"></span></span> ,</td></tr><tr class="table-dark text-dark" name="word/document.xml|01f60b5cfd"><td>Having also considered the note by the Secretary-General drawing attention to the report of the Joint Inspection Unit on the review of the ethics function in the United Nations system, as well as the comments of the Secretary-General and of the United Nations System Chief Executives Board for Coordination thereon,</td></tr><tr class="table-light" name="word/document.xml|8f0d1f9fdc"><td>1. Reaffirms that the staff of the United Nations is an invaluable asset of the Organization <span id="DB4P" class="replacement automatic delete tentative" name="Organization, and | Organization and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and commends its contribution to furthering the purposes and principles of the United Nations;</td></tr><tr class="table-dark text-dark" name="word/document.xml|603c4d5b02"><td>2. Pays tribute to the memory of all staff members who have lost their lives in the service of the Organization;</td></tr><tr class="table-light" name="word/document.xml|1780616fb4"><td>3. Endorses the conclusions and recommendations contained in the reports of the Advisory Committee <span id="1AQZ" class="replacement automatic delete tentative" name="Committee on Administrative and Budgetary Questions, | Committee,"><span class="from_repl from_initial">on Administrative and Budgetary Questions</span> <span class="to_repl to_initial"></span></span> , subject to the provisions of the <span id="I86B" class="replacement automatic delete tentative" name="the present resolution | the resolution"><span class="from_repl from_initial">present</span> <span class="to_repl to_initial"></span></span> resolution;</td></tr><tr class="table-dark text-dark" name="word/document.xml|ede9862fa7"><td>4. Emphasizes the fundamental importance of human resources management reform in the United Nations as a contribution to the enhancement of the efficiency and effectiveness of the United Nations and of the international civil service, and encourages continued transparency in its implementation;</td></tr><tr class="table-light" name="word/document.xml|74be520964"><td>5. Notes the human resources framework and the Secretary-General's proposed ways forward in its implementation, requests the Secretary-General to refine the parameters including clearly quantifiable targets, benchmarks and timelines for measuring impact for the diversity, agility and accountability outcomes, adjust the implementation plans accordingly, and report thereon, including progress achieved, to the General Assembly at the first part of its resumed seventy-ninth session;</td></tr><tr class="table-dark text-dark" name="word/document.xml|18f64b8c7b"><td>6. Takes note of paragraph 50 of the report of the Advisory Committee, stresses the importance of a comprehensive human resources management strategy to assist the Secretary-General in performing human resources functions in a holistic and integrated manner and in ensuring the efficiency and effectiveness of the Organization, and requests the Secretary-General to take stock of his human resources reform efforts and submit for the consideration of the General Assembly at its eightieth session a human resources strategy, building upon the successes and lessons learned over the decade and bearing in mind the need to respond to the challenges for the future;</td></tr><tr class="table-light" name="word/document.xml|d72a5034f4"><td>7. Notes that there is no separate recruitment policy in relation to posts funded by extrabudgetary resources and posts funded by assessed contributions;</td></tr><tr class="table-dark text-dark" name="word/document.xml|3cc17c12f2"><td>8. Requests the Secretary-General to make efforts to safeguard compliance of the recruitment policy and process of the resident coordinator system with the Staff Regulations and Rules of the United Nations, as appropriate <span id="AT7N" class="replacement automatic delete tentative" name="appropriate, and | appropriate and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and to ensure that the selection process of the resident coordinator system is transparent with the aim to treat internal and external candidates equally;</td></tr><tr class="table-light" name="word/document.xml|81c88358ef"><td>9. Recognizes the Secretary-General's intent to update the Secretariat's staff selection system, including through the staff selection 2.0 programme, in accordance with Articles 97 and 101 of the Charter of the United Nations, to improve the overall human resources management, to ensure a recruitment system that is effective, fair, efficient and agile, and to enable the Organization to have a diverse workforce, and requests the Secretary-General to provide detailed information on changes to staff selection at each and all phases of the recruitment process, including an analysis of the impact on recruitment practices, projected timelines, resources required, the designation of central and individual roles and responsibilities for the recruitment process <span id="HPBH" class="replacement automatic delete tentative" name="process, and | process and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and the transition from current applicant qualification requirements (work experience and education) in the job openings to the inclusion of the knowledge, skills and abilities required, with the aim to ensure merit-based selection, increase objectivity, avoid bias and be fair to all applicants;</td></tr><tr class="table-dark text-dark" name="word/document.xml|83b8b76849"><td>10. Reiterates that the Secretary-General has to ensure that the highest standards of efficiency, competence and integrity serve as the paramount consideration in the employment of the staff and in the determination of the conditions of service, with due regard to the importance of recruiting staff on as wide a geographical basis as possible, in accordance with Article 101, paragraph 3, of the Charter;</td></tr><tr class="table-light" name="word/document.xml|0f376a2c6d"><td>11. Underlines the need for strategic workforce planning across the Organization, encourages the Secretary-General to integrate all skills and capabilities required to fulfil mandates and respond effectively to current and future challenges into all stages of staff recruitment and retention, and requests the Secretary-General to intensify his efforts to anticipate future workforce needs and to report thereon in his next overview report;</td></tr><tr class="table-dark text-dark" name="word/document.xml|23d48d3838"><td>12. Requests the Secretary-General, in the context of the ongoing human resources management reforms and business transformation projects, to continue to ensure the equal treatment of candidates with equivalent educational backgrounds during the recruitment process, taking fully into account the fact that Member States have different education systems and that no education system shall be considered the standard to be applied by the Organization;</td></tr><tr class="table-light" name="word/document.xml|a63674b452"><td>13. Also requests the Secretary-General, when considering applicants for vacancies, to give equal treatment of internal and external candidates and to provide the percentage of internal and external candidates selected in the context of future reports;</td></tr><tr class="table-dark text-dark" name="word/document.xml|fc95092393"><td>14. Recalls paragraph 51 of the report of the Advisory Committee, notes with serious concern that the 120-day target for recruitment timelines continues not to be met, and requests the Secretary-General to develop and undertake concrete measures to increase efficiency and tackle the root causes of delays in its staff selection process, based on concrete analysis of each stage of the recruitment process to reduce recruitment timelines and meet the 120-day target;</td></tr><tr class="table-light" name="word/document.xml|dd5b7eb646"><td>15. Requests the Secretary-General to continue his efforts to expand professional development opportunities provided to staff, including language training and training in the six official languages, to meet the workforce capacity needs of the Secretariat;</td></tr><tr class="table-dark text-dark" name="word/document.xml|40fd9b18d4"><td>16. Also requests the Secretary-General to assess the frequency, adequacy, benefits, gaps and functioning of mandatory training in order to contribute to the fulfilment of the mandates of the Organization;</td></tr><tr class="table-light" name="word/document.xml|6c1722f63a"><td>17. Stresses the urgent need to nurture a culture of staff mobility and accelerate the mobility process across the Organization, in particular movements between Headquarters and field duty stations, in order to build an agile, adaptable and motivated workforce required to ensure effective delivery of the mandates entrusted by the General Assembly, and takes note of the decision of the Secretary-General to implement annual mobility exercises through a new, consolidated approach to staff mobility, starting in 2023;</td></tr><tr class="table-dark text-dark" name="word/document.xml|0246820590"><td>18. Recalls paragraph 49 of the report of the Advisory Committee, reaffirms the role of the General Assembly in providing guidance on the mobility framework, and requests the Secretary-General to report to the Assembly at the first part of its resumed seventy-ninth session details on the policy and progress of implementation of the new consolidated mobility framework, including non-financial incentives at the Secretariat and entity levels to encourage mobility and motivate staff to participate in the programme, in particular movements between Headquarters and field duty stations; impact on the composition of the Secretariat, diversity targets and external recruitment; cost implications and measures to mitigate future increased resource requirements; linkage to career development; and an assessment of the current policy of liens and its impact on mobility;</td></tr><tr class="table-light" name="word/document.xml|b691691105"><td>19. Emphasizes the importance of providing the General Assembly, in the context of the human resources management overview reports, with periodic updates on the framework's implementation, including information related to any observed impact on recruitment trends <span id="PRII" class="replacement automatic delete tentative" name="trends, and | trends and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and its contribution to skill development and career progression, as well as information on staff experience and satisfaction with the framework;</td></tr><tr class="table-dark text-dark" name="word/document.xml|49f79d8078"><td>20. Takes note of paragraph 15 of the Advisory Committee report, notes the efforts of the Secretary-General to recruit staff on as wide a geographical basis as possible, in accordance with Article 101, paragraph 3, of the Charter, and requests the Secretary-General to report on the ongoing efforts and progress achieved towards geographical diversity across the Organization;</td></tr><tr class="table-light" name="word/document.xml|e2fe62226d"><td>21. Reiterates its request to the Secretary-General to ensure as wide a geographical distribution of staff as possible at all levels, including at the Director and higher levels, across all geographical posts of the Secretariat, and to report thereon in his next overview report;</td></tr><tr class="table-dark text-dark" name="word/document.xml|3bff608295"><td>22. Notes that the system of desirable ranges is a mechanism with quantifiable targets <span id="HQKA" class="replacement automatic delete tentative" name="targets, and | targets and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and requests the Secretary-General to report on each Member State's representation status, desirable range and movement of geographical posts needed to reach within-range status in his report on the composition of the Secretariat;</td></tr><tr class="table-light" name="word/document.xml|ee6f206f89"><td>23. Requests the Secretary-General to update the desirable ranges system in the Secretariat, with effect from 1 January 2024, incorporating the following changes:</td></tr><tr class="table-dark text-dark" name="word/document.xml|5d0f835de7"><td>(a) To widen the posts subject to the desirable ranges system to all posts funded by the regular budget at the Professional and higher categories, including in special political missions and peacekeeping operations, excluding language posts;</td></tr><tr class="table-light" name="word/document.xml|9c88948d3b"><td>(b) To update annually the calculation of the lower and upper limits of the desirable ranges for all Member States, using the most updated base figure, and number of Member States;</td></tr><tr class="table-dark text-dark" name="word/document.xml|d0dc00653d"><td>(c) To review the system of desirable ranges every five years;</td></tr><tr class="table-light" name="word/document.xml|ae740cbdf0"><td>24. Encourages the Secretary-General to work towards bringing each unrepresented and underrepresented Member State within its desirable range by 2030;</td></tr><tr class="table-dark text-dark" name="word/document.xml|82031cd51f"><td>25. Requests the Secretary-General to ensure that all posts subject to the system of desirable ranges are encumbered accordingly and vacant posts are filled expeditiously;</td></tr><tr class="table-light" name="word/document.xml|8eb543876f"><td>26. Recalls paragraph 14 of the report of the Advisory Committee, and requests the Secretary-General to urge his senior managers to meet the geographical targets contained in the senior managers’ compacts and report on progress achieved in his report on the composition of the Secretariat;</td></tr><tr class="table-dark text-dark" name="word/document.xml|57ba02b339"><td>27. Takes note of paragraph 27 of the report of the Advisory Committee;</td></tr><tr class="table-light" name="word/document.xml|2756198c3e"><td>28. Requests the Secretary-General to intensify his cooperation with all Member States, in particular the unrepresented and underrepresented ones, including through targeted outreach, with a view to attracting qualified candidates into the selection processes of job openings in the Secretariat;</td></tr><tr class="table-dark text-dark" name="word/document.xml|ffc80e214c"><td>29. Reaffirms that the United Nations should have a workforce that is diverse from a variety of perspectives, and encourages the Secretary-General to strengthen the Secretariat's diversity efforts;</td></tr><tr class="table-light" name="word/document.xml|3827cc8e37"><td>30. Encourages the Secretary-General to strengthen efforts to ensure that the United Nations is a diverse workplace where all staff members and non-staff personnel are treated with dignity and respect and take responsibility for maintaining a workplace free of any form of discrimination, harassment, including sexual harassment <span id="4UXG" class="replacement automatic delete tentative" name="harassment, and | harassment and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and abuse of authority;</td></tr><tr class="table-dark text-dark" name="word/document.xml|0667374e07"><td>31. Takes note of paragraph 9 of the report of the Advisory Committee, commends the efforts made by the Secretary-General to achieve gender parity in the Organization, in particular his appointments of female staff at senior levels, notes the continuing low representation of women in field operations and slow progress to move towards parity in this area, and encourages the Secretary-General to increase efforts to reach gender parity in all levels, in particular in areas further from reaching gender parity such as field operations, by 2028, including through support and innovative mechanisms such as talent pools and pipelines;</td></tr><tr class="table-light" name="word/document.xml|619e5d7d64"><td>32. Notes the increase in the average age of staff in the United Nations workforce, as well as the high forecasted level of retirements, stresses the need for an accelerated process to rejuvenate the Organization, and requests the Secretary-General to propose, for the consideration of the General Assembly at the first part of its resumed seventy-ninth session, a comprehensive approach to recruit and retain talent with new perspectives and the required skills, including through outreach, the internship programme, the Junior Professional Officer Programme and the young professionals programme <span id="94EL" class="replacement automatic delete tentative" name="programme, and | programme and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and by increasing the number of entry-level Professional posts (P-1 to P-3) while reducing the number of senior-level posts (D-1 and above), through downward job reclassification or abolishment, as appropriate, and by taking advantage of upcoming retirements, so as not to increase the overall post resource requirements;</td></tr><tr class="table-dark text-dark" name="word/document.xml|1addfb4942"><td>33. Requests the Secretary-General to assess the efficiency of the current administrative practices of the young professionals programme and report thereon in the context of his next report, including on possible measures to improve it;</td></tr><tr class="table-light" name="word/document.xml|420149ff79"><td>34. Reaffirms the need to respect the equality of the two working languages of the Secretariat, further reaffirms the use of additional working languages in specific duty stations as mandated, and in this regard requests the Secretary-General to ensure that vacancy announcements specify the need for either of the working languages of the Secretariat, unless the functions of the post require a specific working language;</td></tr><tr class="table-dark text-dark" name="word/document.xml|10bb8ba410"><td>35. Notes the significant disparities across official languages observed in language requirements in the job openings published on Inspira, encourages the development and the implementation of the guidelines on setting language requirements in future job openings, and requests the Secretary-General to report thereon to the General Assembly at its seventy-eighth session;</td></tr><tr class="table-light" name="word/document.xml|47fbc51a9c"><td>36. Welcomes the efforts of the Secretary-General to combat racism and racial discrimination in the Organization, including the appointment of the Special Adviser on Addressing Racism in the Workplace, and requests the Secretary-General to continue to refine and implement the strategic action plan across the United Nations, including in the recruitment and hiring processes;</td></tr><tr class="table-dark text-dark" name="word/document.xml|2472276fb8"><td>37. Reiterates that the overarching objectives of a performance management system are to measure performance, reward good performance and address underperformance in a credible and effective manner, and requests the Secretary-General to continue to strengthen performance management throughout the Organization, including through the performance appraisal system and improved performance management skills of managers, to promote effectiveness and accountability, including for underperformance, and to sustain a high performance and results-orientated culture;</td></tr><tr class="table-light" name="word/document.xml|03c18c455b"><td>38. Encourages the Secretary-General to ensure that the culture of the Organization incentivizes high performance and deals effectively with underperformance, and that staff career progression is strongly linked to good performance;</td></tr><tr class="table-dark text-dark" name="word/document.xml|fc1d126849"><td>39. Recalls paragraph 41 of the report of the Advisory Committee, acknowledges the efforts undertaken by the Secretary-General to support staff in terms of mental health and well-being, and looks forward to receiving further details on the implementation of those efforts in the next overview report;</td></tr><tr class="table-light" name="word/document.xml|6dfec596e3"><td>40. Also recalls the Secretary-General's bulletin on flexible working arrangements, encourages the Secretary-General to support managers in monitoring staff attendance to ensure that the Organization continues to be responsive to Member States and maintains effective and efficient delivery of its work to assist legislative bodies in their work and to carry out their decisions, and to report thereon to the General Assembly at the first part of its resumed seventy-eighth session;</td></tr><tr class="table-dark text-dark" name="word/document.xml|481eab542f"><td>41. Notes with appreciation the development of the online Secretariat workforce portal as a complementary information tool to the annual reporting on the composition of the Secretariat, and requests the Secretary-General, as appropriate, to ensure that the portal is accessible to all Member States, as well as the Advisory Committee;</td></tr><tr class="table-light" name="word/document.xml|83e63e7da6"><td>42. Requests the Secretary-General to focus his future reports on the composition of the Secretariat on workforce data reflecting progress towards strategic outcomes, including gender, geographical representation <span id="ZZ7P" class="replacement automatic delete tentative" name="representation, and | representation and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and rejuvenation, and to provide trend analysis and identify potential challenges in human resources management;</td></tr><tr class="table-dark text-dark" name="word/document.xml|4a1a2c3357"><td>43. Also requests the Secretary-General to provide in his future reports on the overview of human resources management reform the number of applications per regular job opening disaggregated by grade level in the Professional and higher and Field Service categories for all Secretariat entities;</td></tr><tr class="table-light" name="word/document.xml|091fd3c267"><td>44. Recalls paragraph 22 of the report of the Advisory Committee, and requests the Secretary-General to seek to understand the reasons behind the rates and trends of resignations at certain age brackets and certain levels, including through coordinating mandatory exit interviews across the Secretariat <span id="3YKV" class="replacement automatic delete tentative" name="Secretariat, and | Secretariat and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and to provide comprehensive data and information on resignations, including an analysis of findings and trends along with proposed policy responses in future reports on the composition of the Secretariat;</td></tr><tr class="table-dark text-dark" name="word/document.xml|d2e824fafe"><td>45. Requests the Secretary-General to include systematically, in the context of future reports on the composition of the Secretariat, a detailed breakdown, with the status of incumbency, of all posts and positions at the P-2 and higher levels;</td></tr><tr class="table-light" name="word/document.xml|65d7c35b98"><td>46. Takes note of paragraph 5 of the report of the Advisory Committee;</td></tr><tr class="table-dark text-dark" name="word/document.xml|c0cce48dfa"><td>47. Welcomes efforts by the Secretary-General to implement measures aimed at strengthening coherence, effectiveness and accountability in the management and use of internship programmes in the United Nations system;</td></tr><tr class="table-light" name="word/document.xml|9502be3f31"><td>48. Takes note of paragraphs 7, 9 and 10 of the report of the Advisory Committee;</td></tr><tr class="table-dark text-dark" name="word/document.xml|0cc1b22408"><td>49. Invites executive heads of the United Nations system organizations, under the leadership of the Secretary-General as Chair of the United Nations System Chief Executives Board for Coordination, to work towards the establishment of more coherent internship programmes for the United Nations system;</td></tr><tr class="table-light" name="word/document.xml|4e5185015c"><td>50. Reaffirms that internships should have an educational value for their participants;</td></tr><tr class="table-dark text-dark" name="word/document.xml|1597fc99b8"><td>51. Also reaffirms that Member States have different education systems and that no education system shall be considered the standard to be applied by the Organization;</td></tr><tr class="table-light" name="word/document.xml|253902297e"><td>52. Urges the Secretary-General to consider the United Nations internship programme as an integral part of his ongoing reform of the human resources system of the United Nations, and requests that a comprehensive review on the following elements be presented to the General Assembly no later than the first part of its resumed seventy-ninth session, taking into account, as appropriate:</td></tr><tr class="table-dark text-dark" name="word/document.xml|846c108029"><td>(a) The development of a sustainable internship programme based on an internship strategy and semi-structured training curriculum for interns, to maximize their training experience and reinforce the learning objectives of the programme which are, inter alia, to build a diverse pool of professionals with leadership skills and provide experience in the programmes and activities of the United Nations;</td></tr><tr class="table-light" name="word/document.xml|cfc5de7513"><td>(b) The strengthening of a transparent, merit-based intern recruitment process through an objective review of all intern applicants who meet the criteria, to provide equal opportunities for eligible candidates and to develop outreach mechanisms to attract candidates particularly from unrepresented and underrepresented Member States;</td></tr><tr class="table-dark text-dark" name="word/document.xml|44e56b9fee"><td>(c) Proposals, incorporating lessons learned, on remote working opportunities in the United Nations internship programme, taking into account the modality's inclusiveness and quality, educational purpose, outreach and practical considerations for participants located in multiple time zones with varying access to information and communications technology equipment and connectivity;</td></tr><tr class="table-light" name="word/document.xml|5184ba4321"><td>(d) Clear and measurable indicators for assessing the progress made towards a United Nations internship programme diverse from geographical representation, gender parity and disability perspectives, to the extent practicable, reflecting on best practices;</td></tr><tr class="table-dark text-dark" name="word/document.xml|e566119d1a"><td>(e) Proposals for a possible appropriate support scheme to support interns for the duration of their internships, based on a review of funding and related mechanisms <span id="54SV" class="replacement automatic delete tentative" name="mechanisms, and | mechanisms and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and good practices already in place in some organizations of the United Nations system, including establishing a new category of non-staff personnel for interns, as appropriate;</td></tr><tr class="table-light" name="word/document.xml|8c56ec912f"><td>(f) The repealing of the provision prohibiting interns from applying for or being appointed to any position in the Professional and higher categories or in the Field Service category at the FS-6 and FS-7 levels six months following the expiration date thereof;</td></tr><tr class="table-dark text-dark" name="word/document.xml|ec952c288c"><td>(g) An analysis on the enhancement of the interns’ access to United Nations justice mechanisms;</td></tr><tr class="table-light" name="word/document.xml|2a224e3b2e"><td>53. Requests the Secretary-General to include in the comprehensive review an assessment of whether the restructured internship programme should be administered centrally or remain fully decentralized;</td></tr><tr class="table-dark text-dark" name="word/document.xml|0daef83e8f"><td>54. Recalls paragraph 17 of the report of the Advisory Committee, and requests the Secretary-General to limit the reliance on retirees in order to exercise better workforce succession planning and promote rejuvenation;</td></tr><tr class="table-light" name="word/document.xml|3ede3a57f5"><td>55. Takes note of paragraph 19 of the report of the Advisory Committee;</td></tr><tr class="table-dark text-dark" name="word/document.xml|cb57ea3e35"><td>56. Recalls paragraph 34 of its resolution 71/263, stresses that the use of consultants should be governed by the relevant resolutions of the General Assembly, in particular section VIII of its resolution 53/221, recalls paragraph 26 of the report of the Advisory Committee, notes with concern the continued increase in the use of consultants, and requests the Secretary-General to make every effort to reduce the considerable reliance on consultants, minimize the use of individual contractors, utilize the internal expertise and skills in the Secretariat <span id="BI2O" class="replacement automatic delete tentative" name="Secretariat, and | Secretariat and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and develop in-house capacity;</td></tr><tr class="table-light" name="word/document.xml|03ac3d2778"><td>57. Takes note of paragraph 33 of the report of the Advisory Committee;</td></tr><tr class="table-dark text-dark" name="word/document.xml|e650e98df5"><td>58. Notes with appreciation the report of the Joint Inspection Unit entitled “Review of ethics function in the United Nations System”;</td></tr><tr class="table-light" name="word/document.xml|f7cbf88710"><td>59. Commends the <span id="SORB" class="replacement automatic delete tentative" name="the Ethics Office | the Office"><span class="from_repl from_initial">Ethics</span> <span class="to_repl to_initial"></span></span> Office on its exceptional ongoing efforts to foster a culture of ethics, integrity, transparency and accountability in the Organization <span id="BZ9V" class="replacement automatic delete tentative" name="Organization, and | Organization and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and welcomes the efforts of the Office to increase awareness of ethics-related issues through outreach, training and education;</td></tr><tr class="table-dark text-dark" name="word/document.xml|caff8218d3"><td>60. Takes note of paragraphs 4 and 13 of the report of the Advisory Committee;</td></tr><tr class="table-light" name="word/document.xml|5bde47b2bb"><td>61. Takes note of paragraph 15 of the report of the Advisory Committee, and requests the Secretary-General to continue to take all necessary <span id="OGS9" class="replacement automatic delete tentative" name="necessary measures to | necessary to"><span class="from_repl from_initial">measures</span> <span class="to_repl to_initial"></span></span> to address all potential conflicts of interest, including by refining the criteria, as appropriate, regarding the type and level of information that should be disclosed by members of staff, and to continue encouraging senior officials, who have not yet disclosed a summary of their assets through the voluntary public disclosure initiative, to do so in future cycles;</td></tr><tr class="table-dark text-dark" name="word/document.xml|71301fdc59"><td>62. Encourages the Secretary-General, in his capacity as the Chair of the United Nations System Chief Executives Board for Coordination, to promote protection against retaliation across the system, underscores the importance of raising awareness of the policy, as well as the efforts to continuously improve the framework for protection from retaliation, and in this regard requests the Secretary-General to continue to provide information on the implementation of the policy in his next report;</td></tr><tr class="table-light" name="word/document.xml|e263497b8f"><td>63. Recalls paragraph 20 of the report of the Advisory Committee, emphasizes the need for appropriate levels of oversight, tracking and monitoring of the receipt, custody and disposal of gifts within the global online registry and the authority of individual heads of entities, and requests the Secretary-General to provide an update thereon in his next report on the activities of the Ethics Office;</td></tr><tr class="table-dark text-dark" name="word/document.xml|8b28263f18"><td>64. Welcomes the Ethics Office activities to increase awareness of ethics-related issues for all staff <span id="S8UQ" class="replacement automatic delete tentative" name="staff, and | staff and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and the upgrade of its website in the six official languages of the United Nations, and requests the Secretary-General to propose measures to enhance the <span id="JT8A" class="replacement automatic delete tentative" name="the Ethics Office | the Office"><span class="from_repl from_initial">Ethics</span> <span class="to_repl to_initial"></span></span> Office's work in the field for the consideration of the General Assembly;</td></tr><tr class="table-light" name="word/document.xml|993817de35"><td>65. Takes note of paragraphs 25, 27 and 30 of the report of the Advisory Committee, and approves the recommendations for strengthening the independence of the Ethics Office on direct presentation of the annual report by the Office to the General Assembly and enhanced role of the Independent Audit Advisory Committee to strengthen the accountability framework <span id="2350" class="replacement automatic delete tentative" name="framework, and | framework and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and decides to include in the agenda of the seventy-eighth session an item entitled “Report on the activities of the <span id="3SUP" class="replacement automatic delete tentative" name="the Ethics Office | the Office"><span class="from_repl from_initial">Ethics</span> <span class="to_repl to_initial"></span></span> Office”;</td></tr><tr class="table-dark text-dark" name="word/document.xml|d72d7be041"><td>66. Reaffirms the Organization's zero <span id="C5UH" class="replacement automatic delete tentative" name="zero-tolerance | zero tolerance"><span class="from_repl from_initial">-</span> <span class="to_repl to_initial"></span></span> tolerance approach to all cases of misconduct, stresses the importance of ensuring trust and accountability in the system of disciplinary measures, including through consistent and transparent application of sanctions, and requests the Secretary-General to submit for the consideration of the <span id="SRMM" class="replacement automatic delete tentative" name="the General Assembly | the Assembly"><span class="from_repl from_initial">General</span> <span class="to_repl to_initial"></span></span> Assembly at the first part of its seventy-ninth session comprehensive measures aimed at ensuring his zero <span id="TWWQ" class="replacement automatic delete tentative" name="zero-tolerance | zero tolerance"><span class="from_repl from_initial">-</span> <span class="to_repl to_initial"></span></span> tolerance approach to all cases of misconduct, covering elimination of barriers to reporting misconduct, independence of oversight and investigations <span id="BIGV" class="replacement automatic delete tentative" name="investigations, and | investigations and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and mechanisms to ensure administrative and criminal accountability;</td></tr><tr class="table-light" name="word/document.xml|a53ff83ad2"><td>67. Takes note of paragraph 5 of the report of the Advisory Committee, recognizes the importance of high standards of investigative functions carried out in a credible, objective, factual and unbiased manner within the Organization, and requests the Secretary-General to continue to undertake measures to improve its investigative practices, to provide comprehensive disaggregated data on cases processed, and an analysis thereon, in his future reports on disciplinary matters;</td></tr><tr class="table-dark text-dark" name="word/document.xml|73b313c4f6"><td>68. Notes the increase in time taken to dispose of cases, stresses the importance of ensuring that cases are disposed of in an expeditious manner <span id="4223" class="replacement automatic delete tentative" name="manner, and | manner and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and requests the Secretary-General to propose additional measures to enhance the rate of disposal of cases in his next report on disciplinary measures;</td></tr><tr class="table-light" name="word/document.xml|e5ee32e87d"><td>69. Recalls paragraph 7 of the report of the Advisory Committee, and requests the Secretary-General to lay out more clearly the criteria and internal regulations applied in the determination of misconduct and imposed disciplinary measures, including mitigating and aggravating circumstances, as well as the types of misconduct related to separation and dismissal;</td></tr><tr class="table-dark text-dark" name="word/document.xml|bdbe1e9eed"><td>70. Invites the Secretary-General to incorporate assessments of senior managers’ effectiveness in preventing and addressing misconduct in their performance reviews;</td></tr><tr class="table-light" name="word/document.xml|b732ae4c86"><td>71. Notes the importance of ensuring a working environment free from any form of discrimination, including xenophobia, harassment, including sexual harassment <span id="J4YC" class="replacement automatic delete tentative" name="harassment, and | harassment and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and abuse of authority, further notes the efforts of the Secretary-General to promote trust and accountability <span id="AA1I" class="replacement automatic delete tentative" name="accountability, and | accountability and"><span class="from_repl from_initial">,</span> <span class="to_repl to_initial"></span></span> and to ensure a victim-centred approach to reported allegations, and requests the Secretary-General to undertake further measures, throughout the disciplinary process in this regard, including to improve information and support to victims;</td></tr><tr class="table-dark text-dark" name="word/document.xml|fa8a9c75af"><td>72. Requests the Secretary-General, in coordination with the Chief Executives Board Task Force on Addressing Sexual Harassment within the Organizations of the United Nations System, to identify more suitable terminology to classify various forms of sexual misconduct in the United Nations system based on victim input and best practice;</td></tr><tr class="table-light" name="word/document.xml|9cc18343e9"><td>73. Welcomes the use of <span id="DWMC" class="replacement automatic replace tentative" name="Clear Check | ClearCheck"><span class="from_repl from_initial">Clear Check</span> <span class="to_repl to_initial">ClearCheck</span></span> , requests the Secretary-General, in his capacity as Chair of the Chief Executives Board, to encourage heads of participating entities to promptly record relevant data into Clear Check to increase its utility, and further requests the Secretary-General to include an assessment of whether the scope of entries in <span id="FSGJ" class="replacement automatic replace tentative" name="Clear Check | ClearCheck"><span class="from_repl from_initial">Clear Check</span> <span class="to_repl to_initial">ClearCheck</span></span> could be extended to cover other categories of misconduct and disciplinary sanctions, and to explore whether the <span id="ZQLR" class="replacement automatic replace tentative" name="Clear Check | ClearCheck"><span class="from_repl from_initial">Clear Check</span> <span class="to_repl to_initial">ClearCheck</span></span> database and the Misconduct Disclosure Scheme can complement each other, and to report thereon to the General Assembly at its seventy-eighth session;</td></tr><tr class="table-dark text-dark" name="word/document.xml|ae36fe1b49"><td>74. Welcomes the new Case Management Tracking System to track cases from end-to-end and to capture the full lifespan of the case management process, and requests the Secretary-General to continue to analyse data and trends around misconduct and disciplinary measures in order to inform future activities for prevention and response and to report thereon to the General Assembly at its seventy-eighth session;</td></tr><tr class="table-light" name="word/document.xml|e5b66fbf5c"><td>75. Recalls paragraph 11 of the report of the Advisory Committee, emphasizes that the full recovery of the financial loss amount should be pursued, and encourages the Secretary-General to strengthen his efforts to improve the quantification and the rate of recovery of losses;</td></tr><tr class="table-dark text-dark" name="word/document.xml|e3eed42edb"><td>76. Encourages the Secretary-General to continue to make efforts to expand internal and public awareness and visibility of his policies against prohibited conduct, with a view to upholding the principle of integrity in the United Nations.</td></tr><tr class="table-light" name="word/document.xml|c12126f956"><td>66th plenary meeting 18 April 2023</td></tr><tr class="table-dark text-dark" name="word/header3.xml|2a0283dfba"><td>United Nations</td></tr><tr class="table-light" name="word/header3.xml|f8d7b91262"><td>A/RES/77/278</td></tr><tr class="table-dark text-dark" name="word/header3.xml|170c9f6a4b"><td></td></tr><tr class="table-light" name="word/header3.xml|b54e8dfdae"><td>General Assembly</td></tr><tr class="table-dark text-dark" name="word/header3.xml|efe5b71039"><td>Distr.: General</td></tr><tr class="table-light" name="word/header3.xml|f9ba989c07"><td>27 April 2023</td></tr><tr class="table-dark text-dark" name="word/footer3.xml|4289816a12"><td>23-</td></tr><tr class="table-light" name="word/footer2.xml|508beb3a67"><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 3</td></tr><tr class="table-dark text-dark" name="word/footer2.xml|dd14372bd5"><td>DOCVARIABLE "FooterJN \*MERGEFORMAT</td></tr><tr class="table-light" name="word/footnotes.xml|1e9394cbed"><td></td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|c490c6e6f7"><td></td></tr><tr class="table-light" name="word/footnotes.xml|52d2f359a0"><td>A/77/590, A/77/590/Add.1, A/77/580, A/77/578, A/77/75 and A/77/606.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|e62e622d93"><td>A/77/728, A/77/728/Add.1, A/77/729, A/77/727, A/77/545 and A/77/730.</td></tr><tr class="table-light" name="word/footnotes.xml|e8e02834d3"><td>A/77/258.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|db51dd5262"><td>A/77/258/Add.1.</td></tr><tr class="table-light" name="word/footnotes.xml|bab594721e"><td>A/77/728.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|0c2d9854a2"><td>Ibid.</td></tr><tr class="table-light" name="word/footnotes.xml|0fa13915a3"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|2ce6ff74e8"><td>A/77/729.</td></tr><tr class="table-light" name="word/footnotes.xml|dcdedb26a3"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|d26bbf8501"><td>A/77/728.</td></tr><tr class="table-light" name="word/footnotes.xml|810eeeca31"><td>A/77/728/Add.1.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|ae2c993536"><td>Ibid.</td></tr><tr class="table-light" name="word/footnotes.xml|a0d18f449b"><td>A/77/729.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|10cede3019"><td>A/77/727.</td></tr><tr class="table-light" name="word/footnotes.xml|8499c8bcb1"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|795158017d"><td>Ibid.</td></tr><tr class="table-light" name="word/footnotes.xml|2fde4a1cb9"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|852d5453c9"><td>Ibid.</td></tr><tr class="table-light" name="word/footnotes.xml|a6b17c4d65"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|a78b6993b1"><td>JIU/REP/2021/5.</td></tr><tr class="table-light" name="word/footnotes.xml|b7d4bcb2db"><td>A/77/545.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|ed6a732487"><td>Ibid.</td></tr><tr class="table-light" name="word/footnotes.xml|29d3418c25"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|ffdc360391"><td>Ibid.</td></tr><tr class="table-light" name="word/footnotes.xml|e52cf735ad"><td>A/77/730.</td></tr><tr class="table-dark text-dark" name="word/footnotes.xml|10b74b6de0"><td>Ibid.</td></tr><tr class="table-light" name="word/footnotes.xml|f40f7b030b"><td>Ibid.</td></tr><tr class="table-dark text-dark" name="word/footer1.xml|4044058a01"><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-light" name="word/header1.xml|dbcaa95791"><td>A/RES/77/278</td></tr><tr class="table-dark text-dark" name="word/header1.xml|b0392f7c74"><td>Human resources management</td></tr></tbody>
+  </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <div class="m-1" style="display: inline-block;">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>  
+          
+        </div>
+        <div class="form-check m-2" style="display: inline-block;">
+          <input class="form-check-input" type="checkbox" value="" id="whitelist_blacklist_check" name="whitelist_blacklist_check">
+          <label class="form-check-label" for="whitelist_blacklist_check">
+            Whitelist/Blacklist
+          </label>
+          
+        </div>
+
+
+        
+      </div>
+
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+
