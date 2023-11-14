@@ -505,8 +505,12 @@ function export_docx(){
 		from_rejected_spans=new_element.getElementsByClassName("from_rejected")
 		to_rejected_spans=new_element.getElementsByClassName("to_rejected")
 
-		for (el0 of from_approved_spans) el0.innerHTML=""
-		for (el0 of to_rejected_spans) el0.innerHTML=""
+		for (var i0=0;i0<len(from_approved_spans);i0++) from_approved_spans[i0].innerHTML=""
+		for (var i0=0;i0<len(to_rejected_spans);i0++) to_rejected_spans[i0].innerHTML=""			
+
+
+		// for (el0 of from_approved_spans) el0.innerHTML=""
+		// for (el0 of to_rejected_spans) el0.innerHTML=""
 		visible_text=new_element.textContent	
 		console.log(item_id,item_name,visible_text)
 
