@@ -104,3 +104,4 @@
 {"decision": "accept", "all": false, "affected": 1, "repl": "protestors | protesters", "link": "processing/E-RES-2023-2_HJ.html", "time": "Fri Oct 13 14:57:43 2023"}
 {"decision": "reject", "all": false, "affected": 1, "repl": "Draft report \u21e8 Report", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Wed Oct 25 16:13:39 2023"}
 {"decision": "reject", "all": false, "affected": 1, "repl": "Chapter I \u21e8 chap. 1", "link": "processing/2307999_EC192023L4Rev1_PG.html", "time": "Wed Oct 25 16:13:44 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "Council addressed to | Council to", "link": "processing/2306907E_Editing.html", "time": "Tue Nov 14 16:20:51 2023"}

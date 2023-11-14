@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Pre-editing Data Display</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
+  <script src="https://hmghaly.github.io/script.js"></script> 
+
+</head>
+<style type="text/css">
+del {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+ins {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+
+.from_repl {
+    text-decoration: line-through;
+    background-color: #fbb;
+    color: #555;
+}
+
+.to_repl {
+    text-decoration: none;
+    background-color: #d4fcbc;
+}
+
+.to_appoved {
+  display : inline;
+}
+.to_rejected {
+/*  visibility : "hidden";*/
+  display : none;
+}
+
+.from_appoved {
+  display : none;
+}
+.from_rejected {
+  display : inline;
+}
+
+.tentative {
+  border-style: groove;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.approved {
+  border-style: groove;
+  border-color: green;
+  background-color: #d4fcbc;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.rejected {
+  border-style: groove;
+  border-color: red;
+  border-width: 2px;
+  padding: 2px;
+}
+
+.selected {
+  border-style: solid;
+  border-color: blue;
+  border-width: 2px;
+  padding: 2px;
+}
+
+
+
+blockquote {
+    padding-left: 15px;
+    border-left: 3px solid #d7d7db;
+    font-size: 1rem;
+}
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
+  
+</style>
+
+<script type="text/javascript">
+
+var el_i=0
+var el_list=[]
+var select_el_id=""
+var qs_dict=parse_qs()
+
+
+function init(){
+  console.log("init")
+  el_list=get_all_tentative_ids()//cur_classes.map(x => x.innerHTML)
+  console.log(el_list)
+  display_counts()
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  update_ui()
+
+
+  //identify all tentative replacemnet elements - get their ids
+  //update count of repl_count
+  //select first element - update corresponding element and cur_repl_number
+  //set current counter
+}  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
+
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
+
+function go2prev_repl(){
+  console.log("go2prev_repl")
+  el_i-=1
+  if (el_i<0) el_i=len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+
+  //inc el_counter 
+  //update counts
+  //updated selected 
+
+}  
+
+function go2next_repl(){
+  console.log("go2next_repl")
+  el_i+=1
+  if (el_i>=len(el_list)) el_i=0 //len(el_list)-1
+  if (len(el_list)==0) return
+  select_el_id=el_list[el_i]
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  
+}  
+
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  repl_outcome_dict["link"]=qs_dict["link"]
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  post_data_async("log_repl",repl_outcome_dict)
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
+  console.log("accept_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  ids_to_approve=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_approve)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to approved
+  //change child from_repl > from_accepted
+  //change child to_repl > to_accepted
+  //update counts and displayed counts
+}  
+
+
+function reject_repl_OLD(){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  ids_to_reject=[]
+
+  for (id0 of el_list){
+  	corr_repl_pair=get_repl_pair(id0)
+  	if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+
+  }
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+  	next_el_id=el_list[i0]
+  	if (is_in(next_el_id,ids_to_reject)) continue
+  	else {
+  		select_el_id=next_el_id
+  		//el_i=i0
+  		break
+  	} 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  display_counts()  
+  //remove el id from id list
+  //remove slected from el
+  //change tentative to rejected
+  //change child from_repl > from_rejected
+  //change child to_repl > to_rejected
+  //update counts and displayed counts
+
+}  
+
+function undo_repl(){
+  console.log("undo_repl")
+}  
+
+function apply_accept(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("approved")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_appoved");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_appoved")
+	console.log("applied accept")	
+}
+
+
+function apply_reject(cur_id){
+	cur_el=$$(cur_id)
+	cur_el.classList.remove("tentative")
+	cur_el.classList.add("rejected")
+
+	from_el=cur_el.getElementsByClassName("from_repl")[0]
+	to_el=cur_el.getElementsByClassName("to_repl")[0]
+	from_el.classList.remove("from_repl")
+	from_el.classList.add("from_rejected");
+	to_el.classList.remove("to_repl")
+	to_el.classList.add("to_rejected")
+	console.log("applied reject")	
+}
+
+
+
+function get_repl_pair(cur_id){
+	cur_el=$$(cur_id)
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
+	//console.log(from_el,to_el)
+}
+
+function get_all_tentative_ids(){
+  //elements with tentative class and their ids
+  cur_classes=get_class_el_items(".tentative")
+  var temp_list=[]
+  for (it0 of cur_classes) {
+     if (it0.id=="" || it0.id==null) continue
+     if (it0.classList.contains("human")) continue
+     temp_list.push(it0.id) 
+  } 
+  return temp_list
+}
+
+function update_counts(){
+  // displayed_el_i=str(el_i+1)
+  // $$("cur_repl_number").innerHTML=""
+}
+
+function display_counts(){
+  displayed_el_i=str(el_i+1)
+  if (len(el_list)==0) displayed_el_i="0"
+  $$("cur_repl_number").innerHTML=displayed_el_i
+  $$("repl_count").innerHTML=str(len(el_list))
+
+}
+
+function select_el(el_id){
+  $(".selected").removeClass("selected");
+  $("#"+el_id).addClass("selected")
+  scroll2el($$(el_id))
+  //scroll2el()
+  //remove slected from any element
+  //scroll2el
+  //update with selected
+}
+
+
+
+
+</script>
+
+<body onload="init()">
+
+
+<div class="container">
+
+<nav class="navbar fixed-top navbar-light bg-light">
+  <span class="navbar-brand mb-0 h5">Pre-editing Dashboard</span>
+  <span class="navbar-brand mb-0 h1">
+          <button type="button" class="btn btn-primary" onclick="go2prev_repl()">&laquo;</button>
+            <span id="cur_repl_number">5</span>/
+            <span id="repl_count">12</span>
+
+          <button type="button" class="btn btn-primary" onclick="go2next_repl()">&raquo;</button>  
+</span>
+  <span class="navbar-brand mb-0 h1">
+    <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
+    <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
+    <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
+
+
+
+
+
+<!--     <div class="form-check">
+  <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
+  <label class="form-check-label" for="flexCheckChecked">
+    <small class="text-muted">Apply to identical</small>
+  </label>
+
+</div> -->
+
+  </span>
+</nav>
+<div class="mx-auto" style="height: 100px;">
+  -
+</div>
+
+  <h2 hidden>Pre-editing Data Display</h2>
+  <p hidden>Displaying editing information.</p>
+
+  <!-- <div id="testing" class="mt-10">
+    <span class="from_repl">What</span><span class="to_repl">Who</span> <span class="to_appoved">to_appoved</span> <span class="to_rejected">to_rejected</span> <span class="from_appoved">from_appoved</span> <span class="from_rejected">from_rejected</span>
+
+              <span id="13213" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+              <span id="233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="12233" class="tentative">
+                <span class="from_repl">Where</span> <span class="to_repl">There</span>
+              </span>
+
+              <span id="0003132" class="tentative">
+                <span class="from_repl">When</span> <span class="to_repl">Then</span>
+              </span>
+
+              <span id="1321300" class="tentative">
+                <span class="from_repl">What</span> <span class="to_repl">Who</span>
+              </span>
+
+  </div> -->
+
+  <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
+    <thead id="data_table_headers"><tr><th>Output</th></tr></thead>
+    <tbody id="data_display_table_body" contenteditable><tr class="table-light" name="word/header2.xml|bfa8f95968"><td>DOCVARIABLE "sss1 \*MERGEFORMAT A/AC.198/2023/L.1</td></tr><tr class="table-dark text-dark" name="word/document.xml|d9ba8928c4"><td>Committee on Information</td></tr><tr class="table-light" name="word/document.xml|af82bff62b"><td>Forty-fifth session</td></tr><tr class="table-dark text-dark" name="word/document.xml|deca8c66e0"><td>24 April – 4 May 2023</td></tr><tr class="table-light" name="word/document.xml|2e2f018e4d"><td>Agenda item 11</td></tr><tr class="table-dark text-dark" name="word/document.xml|e0323b3c26"><td>Consideration and adoption of the report of the Committee to the General Assembly at its seventy-eighth session</td></tr><tr class="table-light" name="word/document.xml|b075f5fec9"><td><span id="RQX2" class="replacement automatic replace tentative" name="Draft report | Report"><span class="from_repl from_initial">Draft report</span> <span class="to_repl to_initial">Report</span></span> of the Committee on Information</td></tr><tr class="table-dark text-dark" name="word/document.xml|31a48f55da"><td><span id="1AQZ" class="replacement automatic replace tentative" name="Chapter I | chap. 1"><span class="from_repl from_initial">Chapter I</span> <span class="to_repl to_initial">chap. 1</span></span></td></tr><tr class="table-light" name="word/document.xml|67dd439e70"><td>Introduction</td></tr><tr class="table-dark text-dark" name="word/document.xml|77198ef8bd"><td>1. In its resolution 34/182, the General Assembly decided to maintain the Committee to Review United Nations Public Information Policies and Activities, established by its resolution 33/115 C, which would henceforth be known as the Committee on Information, and to increase its membership from 41 to 66. In section I, paragraph 2, of resolution 34/182, the Assembly requested the Committee:</td></tr><tr class="table-light" name="word/document.xml|d514b29cea"><td>(a) To continue to examine United Nations public information policies and activities, in the light of the evolution of international relations, particularly during the previous two decades, and of the imperatives of the establishment of the new international economic order and of a new world information and communication order;</td></tr><tr class="table-dark text-dark" name="word/document.xml|276fb4c68e"><td>(b) To evaluate and follow <span id="I86B" class="replacement automatic insert tentative" name="follow up | follow-up"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">-</span></span> up the efforts made and the progress achieved by the United Nations system in the field of information and communications;</td></tr><tr class="table-light" name="word/document.xml|e26f7172a1"><td>(c) To promote the establishment of a new, more just and more effective world information and communication order intended to strengthen peace and international understanding and based on the free circulation and wider and better balanced dissemination of information and to make recommendations thereon to the General Assembly.</td></tr><tr class="table-dark text-dark" name="word/document.xml|bb03da2ccd"><td>2. The Assembly also requested the Committee and the Secretary-General to report to it at its thirty-fifth session.</td></tr><tr class="table-light" name="word/document.xml|d6b13c4c53"><td>3. The General Assembly, from its thirty-sixth to seventy-sixth sessions, took note of the reports of the Committee and adopted resolutions by consensus. At its seventy-seventh session, the Assembly took note of the report of the Committee and adopted by consensus resolutions HYPERLINK "https://undocs.org/en/A/RES/75/101a-b XXX A and B.</td></tr><tr class="table-dark text-dark" name="word/document.xml|f528b82905"><td>4. Currently, the Committee is composed of the following Member States:</td></tr><tr class="table-light" name="word/document.xml|62b02130d8"><td>Algeria</td></tr><tr class="table-dark text-dark" name="word/document.xml|938e8ff027"><td>Angola</td></tr><tr class="table-light" name="word/document.xml|312b3062b9"><td>Antigua and Barbuda</td></tr><tr class="table-dark text-dark" name="word/document.xml|048dba304f"><td>Argentina</td></tr><tr class="table-light" name="word/document.xml|e756cbbbec"><td>Armenia</td></tr><tr class="table-dark text-dark" name="word/document.xml|adafcdd0c6"><td>Austria</td></tr><tr class="table-light" name="word/document.xml|91c61d778a"><td>Azerbaijan</td></tr><tr class="table-dark text-dark" name="word/document.xml|9577775d5a"><td>Bangladesh</td></tr><tr class="table-light" name="word/document.xml|aaa5432f05"><td>Belarus</td></tr><tr class="table-dark text-dark" name="word/document.xml|20a784dab6"><td>Belgium</td></tr><tr class="table-light" name="word/document.xml|4867cf5036"><td>Belize</td></tr><tr class="table-dark text-dark" name="word/document.xml|3ce65cd6b3"><td>Benin</td></tr><tr class="table-light" name="word/document.xml|af6d667873"><td>Bolivia (Plurinational State of)</td></tr><tr class="table-dark text-dark" name="word/document.xml|da41cdda8e"><td>Brazil</td></tr><tr class="table-light" name="word/document.xml|f8da7798b2"><td>Bulgaria</td></tr><tr class="table-dark text-dark" name="word/document.xml|cc4084862d"><td>Burkina Faso</td></tr><tr class="table-light" name="word/document.xml|4e2f9b1957"><td>Burundi</td></tr><tr class="table-dark text-dark" name="word/document.xml|70e0a87136"><td>Cabo Verde</td></tr><tr class="table-light" name="word/document.xml|c4bcad6919"><td>Chile</td></tr><tr class="table-dark text-dark" name="word/document.xml|835057c083"><td>China</td></tr><tr class="table-light" name="word/document.xml|5ffb09a506"><td>Colombia</td></tr><tr class="table-dark text-dark" name="word/document.xml|7a5d17cc17"><td>Congo</td></tr><tr class="table-light" name="word/document.xml|9cd5c4e70c"><td>Costa Rica</td></tr><tr class="table-dark text-dark" name="word/document.xml|f49a094c44"><td>Côte d’Ivoire</td></tr><tr class="table-light" name="word/document.xml|546a65c75a"><td>Croatia</td></tr><tr class="table-dark text-dark" name="word/document.xml|7b87728ed1"><td>Cuba</td></tr><tr class="table-light" name="word/document.xml|f9d70c25a3"><td>Cyprus</td></tr><tr class="table-dark text-dark" name="word/document.xml|28895cf731"><td>Czechia</td></tr><tr class="table-light" name="word/document.xml|0f23bd1558"><td>Democratic People's Republic of Korea</td></tr><tr class="table-dark text-dark" name="word/document.xml|a29cf6f2cd"><td>Democratic Republic of the Congo</td></tr><tr class="table-light" name="word/document.xml|e3d81e1478"><td>Denmark</td></tr><tr class="table-dark text-dark" name="word/document.xml|9bd6db7caf"><td>Djibouti</td></tr><tr class="table-light" name="word/document.xml|7b97d8a1e7"><td>Dominican Republic</td></tr><tr class="table-dark text-dark" name="word/document.xml|ddf032878c"><td>Ecuador</td></tr><tr class="table-light" name="word/document.xml|62483429d3"><td>Egypt</td></tr><tr class="table-dark text-dark" name="word/document.xml|f71e769b05"><td>El Salvador</td></tr><tr class="table-light" name="word/document.xml|1abba30cc8"><td>Estonia</td></tr><tr class="table-dark text-dark" name="word/document.xml|a9233c54a6"><td>Ethiopia</td></tr><tr class="table-light" name="word/document.xml|b4790ec391"><td>Finland</td></tr><tr class="table-dark text-dark" name="word/document.xml|83b71c095c"><td>France</td></tr><tr class="table-light" name="word/document.xml|5abdc699dd"><td>Gabon</td></tr><tr class="table-dark text-dark" name="word/document.xml|0dcfa06958"><td>Georgia</td></tr><tr class="table-light" name="word/document.xml|e0edbea460"><td>Germany</td></tr><tr class="table-dark text-dark" name="word/document.xml|38ccf063c2"><td>Ghana</td></tr><tr class="table-light" name="word/document.xml|4f149a74a8"><td>Greece</td></tr><tr class="table-dark text-dark" name="word/document.xml|141baee6a6"><td>Guatemala</td></tr><tr class="table-light" name="word/document.xml|51c3f4ad7f"><td>Guinea</td></tr><tr class="table-dark text-dark" name="word/document.xml|25b36d6a6c"><td>Guyana</td></tr><tr class="table-light" name="word/document.xml|e532309ed6"><td>Honduras</td></tr><tr class="table-dark text-dark" name="word/document.xml|c4ebd87568"><td>Hungary</td></tr><tr class="table-light" name="word/document.xml|abb04149cb"><td>Iceland</td></tr><tr class="table-dark text-dark" name="word/document.xml|d72fb9fc1e"><td>India</td></tr><tr class="table-light" name="word/document.xml|605ece7a7f"><td>Indonesia</td></tr><tr class="table-dark text-dark" name="word/document.xml|288917d1e0"><td>Iran (Islamic Republic of)</td></tr><tr class="table-light" name="word/document.xml|ed5751f419"><td>Iraq</td></tr><tr class="table-dark text-dark" name="word/document.xml|47cf3f281b"><td>Ireland</td></tr><tr class="table-light" name="word/document.xml|d4f47c18fc"><td>Israel</td></tr><tr class="table-dark text-dark" name="word/document.xml|bd667bc18c"><td>Italy</td></tr><tr class="table-light" name="word/document.xml|4e499e5bf2"><td>Jamaica</td></tr><tr class="table-dark text-dark" name="word/document.xml|4027d52173"><td>Japan</td></tr><tr class="table-light" name="word/document.xml|77261833a2"><td>Jordan</td></tr><tr class="table-dark text-dark" name="word/document.xml|1917b572c5"><td>Kazakhstan</td></tr><tr class="table-light" name="word/document.xml|c6a88e5b66"><td>Kenya</td></tr><tr class="table-dark text-dark" name="word/document.xml|91976a6f5e"><td>Latvia</td></tr><tr class="table-light" name="word/document.xml|3b13f3a15f"><td>Lebanon</td></tr><tr class="table-dark text-dark" name="word/document.xml|1bd3846c68"><td>Liberia</td></tr><tr class="table-light" name="word/document.xml|871982e074"><td>Libya</td></tr><tr class="table-dark text-dark" name="word/document.xml|92718d82b6"><td>Luxembourg</td></tr><tr class="table-light" name="word/document.xml|b5694286e8"><td>Madagascar</td></tr><tr class="table-dark text-dark" name="word/document.xml|c1cea1fae5"><td>Malaysia</td></tr><tr class="table-light" name="word/document.xml|c0c1db21b0"><td>Malta</td></tr><tr class="table-dark text-dark" name="word/document.xml|a7cd8a32e0"><td>Mexico</td></tr><tr class="table-light" name="word/document.xml|c9c39d4eac"><td>Monaco</td></tr><tr class="table-dark text-dark" name="word/document.xml|686a942a9f"><td>Mongolia</td></tr><tr class="table-light" name="word/document.xml|9e42f5ce26"><td>Morocco</td></tr><tr class="table-dark text-dark" name="word/document.xml|7ad70cf193"><td>Mozambique</td></tr><tr class="table-light" name="word/document.xml|35a35fd790"><td>Nepal</td></tr><tr class="table-dark text-dark" name="word/document.xml|ca641378ff"><td>Netherlands</td></tr><tr class="table-light" name="word/document.xml|aebcca0c20"><td>Niger</td></tr><tr class="table-dark text-dark" name="word/document.xml|d53bc46d17"><td>Nigeria</td></tr><tr class="table-light" name="word/document.xml|4299335778"><td>Oman</td></tr><tr class="table-dark text-dark" name="word/document.xml|c4dfa4622c"><td>Pakistan</td></tr><tr class="table-light" name="word/document.xml|0ae8660978"><td>Paraguay</td></tr><tr class="table-dark text-dark" name="word/document.xml|2884a938e4"><td>Peru</td></tr><tr class="table-light" name="word/document.xml|f5e607b124"><td>Philippines</td></tr><tr class="table-dark text-dark" name="word/document.xml|f425e9463c"><td>Poland</td></tr><tr class="table-light" name="word/document.xml|c9459f9940"><td>Portugal</td></tr><tr class="table-dark text-dark" name="word/document.xml|60b2f91167"><td>Qatar</td></tr><tr class="table-light" name="word/document.xml|7e69f9c0a8"><td>Republic of Korea</td></tr><tr class="table-dark text-dark" name="word/document.xml|ea19ea33e9"><td>Republic of Moldova</td></tr><tr class="table-light" name="word/document.xml|905a43531d"><td>Romania</td></tr><tr class="table-dark text-dark" name="word/document.xml|caaaed97c6"><td>Russian Federation</td></tr><tr class="table-light" name="word/document.xml|ba9262ffe3"><td>Saint Vincent and the Grenadines</td></tr><tr class="table-dark text-dark" name="word/document.xml|a72d247c28"><td>Saudi Arabia</td></tr><tr class="table-light" name="word/document.xml|590065f8da"><td>Senegal</td></tr><tr class="table-dark text-dark" name="word/document.xml|08c0a30b0b"><td>Sierra Leone</td></tr><tr class="table-light" name="word/document.xml|787fa00dcb"><td>Singapore</td></tr><tr class="table-dark text-dark" name="word/document.xml|05dd18a2dc"><td>Slovakia</td></tr><tr class="table-light" name="word/document.xml|04f73d67c3"><td>Solomon Islands</td></tr><tr class="table-dark text-dark" name="word/document.xml|1e67295f76"><td>Somalia</td></tr><tr class="table-light" name="word/document.xml|34d28a8c6f"><td>South Africa</td></tr><tr class="table-dark text-dark" name="word/document.xml|2cc0b4befe"><td>Spain</td></tr><tr class="table-light" name="word/document.xml|66fbb1697d"><td>Sri Lanka</td></tr><tr class="table-dark text-dark" name="word/document.xml|19795e6f89"><td>Sudan</td></tr><tr class="table-light" name="word/document.xml|cb4f6c1af9"><td>Suriname</td></tr><tr class="table-dark text-dark" name="word/document.xml|d696ce7390"><td>Switzerland</td></tr><tr class="table-light" name="word/document.xml|74d986a606"><td>Syrian Arab Republic</td></tr><tr class="table-dark text-dark" name="word/document.xml|1041bb85b0"><td>Thailand</td></tr><tr class="table-light" name="word/document.xml|0e49de26ca"><td>Togo</td></tr><tr class="table-dark text-dark" name="word/document.xml|1d024b49fc"><td>Trinidad and Tobago</td></tr><tr class="table-light" name="word/document.xml|4158afef96"><td>Tunisia</td></tr><tr class="table-dark text-dark" name="word/document.xml|d4af7c8543"><td>Türkiye</td></tr><tr class="table-light" name="word/document.xml|49a08979ea"><td>Ukraine</td></tr><tr class="table-dark text-dark" name="word/document.xml|fbd870722f"><td>United Kingdom of Great Britain and Northern Ireland</td></tr><tr class="table-light" name="word/document.xml|0b778e4251"><td>United Republic of Tanzania</td></tr><tr class="table-dark text-dark" name="word/document.xml|ffdc459ea8"><td>United States of America <span id="HPBH" class="replacement automatic insert tentative" name="America _se_ | America. _se_"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">.</span></span></td></tr><tr class="table-light" name="word/document.xml|22bcbd9803"><td>Uruguay</td></tr><tr class="table-dark text-dark" name="word/document.xml|8800c18771"><td>Venezuela (Bolivarian Republic of)</td></tr><tr class="table-light" name="word/document.xml|dde32fa9e9"><td>Viet Nam</td></tr><tr class="table-dark text-dark" name="word/document.xml|e7b184bd67"><td>Yemen</td></tr><tr class="table-light" name="word/document.xml|b1e08072b0"><td>Zambia</td></tr><tr class="table-dark text-dark" name="word/document.xml|0739ac9311"><td>Zimbabwe <span id="PRII" class="replacement automatic insert tentative" name="Zimbabwe _se_ | Zimbabwe. _se_"><span class="from_repl from_initial"></span> <span class="to_repl to_initial">.</span></span></td></tr><tr class="table-light" name="word/document.xml|5a7b9d7be1"><td></td></tr><tr class="table-dark text-dark" name="word/header3.xml|622d38cb92"><td>United Nations</td></tr><tr class="table-light" name="word/header3.xml|785f6980a4"><td>A/AC.198/2023/L.1</td></tr><tr class="table-dark text-dark" name="word/header3.xml|e537be6687"><td></td></tr><tr class="table-light" name="word/header3.xml|0f16ce4dc7"><td>General Assembly</td></tr><tr class="table-dark text-dark" name="word/header3.xml|9062594708"><td>Distr.: Limited</td></tr><tr class="table-light" name="word/header3.xml|24e11945dc"><td>4 May 2023</td></tr><tr class="table-dark text-dark" name="word/header3.xml|24c5df9504"><td>Original: English</td></tr><tr class="table-light" name="word/footer3.xml|f9ebfb4e6f"><td>XXXXXX (E) XXXXX</td></tr><tr class="table-dark text-dark" name="word/footer3.xml|bfc3bd02a3"><td>*XXXXXX</td></tr><tr class="table-light" name="word/footer2.xml|97550acb7c"><td>PAGE \*Arabic \*MERGEFORMAT 2/ NUMPAGES \*Arabic \*MERGEFORMAT 3</td></tr><tr class="table-dark text-dark" name="word/footer2.xml|fefe7ee731"><td>XX-XXXXX</td></tr><tr class="table-light" name="word/footer1.xml|465c06fde4"><td>DOCVARIABLE "FooterJN \*MERGEFORMAT XXXX8</td></tr><tr class="table-dark text-dark" name="word/footer1.xml|e73b6cf2e1"><td>PAGE \*Arabic \*MERGEFORMAT 3/ NUMPAGES \*Arabic \*MERGEFORMAT 4</td></tr><tr class="table-light" name="word/header1.xml|d5ca54ddff"><td>DOCVARIABLE "sss1 \*MERGEFORMAT A/AC.198/2022/L.1</td></tr></tbody>
+  </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <div class="m-1" style="display: inline-block;">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>  
+          
+        </div>
+        <div class="form-check m-2" style="display: inline-block;">
+          <input class="form-check-input" type="checkbox" value="" id="whitelist_blacklist_check" name="whitelist_blacklist_check">
+          <label class="form-check-label" for="whitelist_blacklist_check">
+            Whitelist/Blacklist
+          </label>
+          
+        </div>
+
+
+        
+      </div>
+
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
+</div>
+
+</body>
+</html>
+

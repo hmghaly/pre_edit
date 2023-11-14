@@ -8,6 +8,9 @@
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+  
   <script src="https://hmghaly.github.io/script.js"></script> 
 
 </head>
@@ -85,6 +88,18 @@ blockquote {
     border-left: 3px solid #d7d7db;
     font-size: 1rem;
 }
+
+footer {
+    position: fixed;
+    background-color: Beige;
+    height: 60px;
+    bottom: 0;
+    width: 100%;
+}
+
+.footer_spacer{
+  height: 60px;
+}
   
 </style>
 
@@ -93,6 +108,7 @@ blockquote {
 var el_i=0
 var el_list=[]
 var select_el_id=""
+var qs_dict=parse_qs()
 
 
 function init(){
@@ -102,11 +118,34 @@ function init(){
   display_counts()
   select_el_id=el_list[el_i]
   select_el(select_el_id)
+  update_ui()
+
+
   //identify all tentative replacemnet elements - get their ids
   //update count of repl_count
   //select first element - update corresponding element and cur_repl_number
   //set current counter
 }  
+
+function update_ui(){
+  update_repl_display()
+  display_counts()
+}
+
+function update_repl_display(){
+  try {
+    pair_to_accept=get_repl_pair(select_el_id) 
+  } 
+  catch(err) {
+    pair_to_accept=""
+  } 
+  pair_to_accept=pair_to_accept.replace("|","⇨")
+  pair_to_accept=repl(pair_to_accept,"_se_","&lt;/s&gt;") //pair_to_accept.replace("_se_","&lt;/s&gt;")
+  pair_to_accept=repl(pair_to_accept,"_ss_","&lt;s&gt;") //pair_to_accept.replace("_ss_","&lt;s&gt;")
+
+  $$("cur_repl_display").innerHTML=pair_to_accept
+
+}
 
 function go2prev_repl(){
   console.log("go2prev_repl")
@@ -115,7 +154,8 @@ function go2prev_repl(){
   if (len(el_list)==0) return
   select_el_id=el_list[el_i]
   select_el(select_el_id)
-  display_counts()
+  //display_counts()
+  update_ui()
 
   //inc el_counter 
   //update counts
@@ -130,11 +170,135 @@ function go2next_repl(){
   if (len(el_list)==0) return
   select_el_id=el_list[el_i]
   select_el(select_el_id)
-  display_counts()
+  //display_counts()
+  update_ui()
   
 }  
 
+function accept_repl_all(){
+  cur_decision_dict={"decision":"accept_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl_all(){
+  cur_decision_dict={"decision":"reject_all","all":true}
+  accept_reject(cur_decision_dict)
+}
+
 function accept_repl(){
+  cur_decision_dict={"decision":"accept","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+function reject_repl(){
+  cur_decision_dict={"decision":"reject","all":false}
+  accept_reject(cur_decision_dict)
+}
+
+
+function accept_reject(repl_outcome_dict){
+  decision0=repl_outcome_dict["decision"]
+  apply_to_all=repl_outcome_dict["all"] || false
+  affected=[]
+  if (decision0=="accept" || decision0=="accept_all") out_dict=accept_process(apply_to_all)
+  if (decision0=="reject" || decision0=="reject_all") out_dict=reject_process(apply_to_all) 
+  repl_outcome_dict["affected"]=out_dict["affected"] || 0 //len(affected) 
+  repl_outcome_dict["repl"]=out_dict["repl"] || ""
+  repl_outcome_dict["link"]=qs_dict["link"]
+  console.log(repl_outcome_dict)
+  //send to backend
+  //update UI
+  el_list=get_all_tentative_ids()
+  el_i=el_list.indexOf(select_el_id)
+  console.log(el_list)
+  select_el(select_el_id)
+  //display_counts()
+  update_ui()
+  post_data_async("log_repl",repl_outcome_dict)
+
+}
+
+
+function accept_process(do_accept_all){
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_accept=get_repl_pair(select_el_id)
+  console.log(pair_to_accept)
+  console.log(el_list)
+  if (!do_accept_all){
+    ids_to_approve=[select_el_id]
+  }
+  else {
+    ids_to_approve=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_accept)) ids_to_approve.push(id0)
+    }
+  }
+  console.log("ids_to_approve",ids_to_approve)
+  el_i=el_list.indexOf(select_el_id) //identify next element after the approval of current
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_approve)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (approved_id0 of ids_to_approve) apply_accept(approved_id0)
+  approved_out_dict={}
+  approved_out_dict["affected"]=len(ids_to_approve)
+  approved_out_dict["repl"]=pair_to_accept
+  return approved_out_dict
+}
+
+function reject_process(do_reject_all){
+  console.log("reject_repl")
+  el_list=get_all_tentative_ids()
+  if (len(el_list)==0) return {}
+
+  pair_to_reject=get_repl_pair(select_el_id)
+  console.log(pair_to_reject)
+  //console.log(el_list)
+  if (!do_reject_all){
+    ids_to_reject=[select_el_id]
+  }
+  else {
+    ids_to_reject=[]
+    for (id0 of el_list){
+      corr_repl_pair=get_repl_pair(id0)
+      if (str(corr_repl_pair)==str(pair_to_reject)) ids_to_reject.push(id0)
+    }
+  }
+
+
+  console.log("ids_to_reject",ids_to_reject)
+  el_i=el_list.indexOf(select_el_id)
+  next_i=0
+  for (var i0=el_i; i0<len(el_list);i0++){
+    next_el_id=el_list[i0]
+    if (is_in(next_el_id,ids_to_reject)) continue
+    else {
+      select_el_id=next_el_id
+      //el_i=i0
+      break
+    } 
+  }
+
+  for (rejected_id0 of ids_to_reject) apply_reject(rejected_id0)
+  rejected_out_dict={}
+  rejected_out_dict["affected"]=len(ids_to_reject)
+  rejected_out_dict["repl"]=pair_to_accept
+  return rejected_out_dict
+
+}
+
+
+function accept_repl_OLD(){
   console.log("accept_repl")
   el_list=get_all_tentative_ids()
   if (len(el_list)==0) return
@@ -178,7 +342,7 @@ function accept_repl(){
 }  
 
 
-function reject_repl(){
+function reject_repl_OLD(){
   console.log("reject_repl")
   el_list=get_all_tentative_ids()
   if (len(el_list)==0) return
@@ -259,9 +423,11 @@ function apply_reject(cur_id){
 
 function get_repl_pair(cur_id){
 	cur_el=$$(cur_id)
-	from_el=cur_el.getElementsByClassName("from_repl")[0]
-	to_el=cur_el.getElementsByClassName("to_repl")[0]
-	return [from_el.innerHTML,to_el.innerHTML]
+  cur_el_name=cur_el.getAttribute("name");
+  return cur_el_name
+	// from_el=cur_el.getElementsByClassName("from_repl")[0]
+	// to_el=cur_el.getElementsByClassName("to_repl")[0]
+	// return [from_el.innerHTML,to_el.innerHTML]
 	//console.log(from_el,to_el)
 }
 
@@ -287,6 +453,7 @@ function display_counts(){
   if (len(el_list)==0) displayed_el_i="0"
   $$("cur_repl_number").innerHTML=displayed_el_i
   $$("repl_count").innerHTML=str(len(el_list))
+
 }
 
 function select_el(el_id){
@@ -322,13 +489,18 @@ function select_el(el_id){
     <button type="button" class="btn btn-success" onclick="accept_repl()">Accept</button>
     <button type="button" class="btn btn-danger" onclick="reject_repl()">Reject</button>
     <button type="button" class="btn btn-info" onclick="undo_repl()">Undo</button>
-    <div class="form-check">
+
+
+
+
+
+<!--     <div class="form-check">
   <input class="form-check-input" type="checkbox" value="" id="flexCheckChecked" checked disabled>
   <label class="form-check-label" for="flexCheckChecked">
     <small class="text-muted">Apply to identical</small>
   </label>
 
-</div>
+</div> -->
 
   </span>
 </nav>
@@ -364,19 +536,51 @@ function select_el(el_id){
 
   </div> -->
 
-
-
-
   <table class="table table-responsive w-100 d-block d-md-table" id="data_display_table">
-    <thead>
-      <tr>
-        <th>Original</th>
-        <th>Final</th>
-        <th>Editing</th>
-      </tr>
-    </thead>
-    <tbody id="data_display_table_body"><tr class="table-light"><td>United Nations</td><td>United Nations</td><td>United Nations</td></tr><tr class="table-dark text-dark"><td>S/2023/270</td><td>S/2023/270</td><td>S/2023/270</td></tr><tr class="table-light"><td>Security Council</td><td>Security Council</td><td>Security Council</td></tr><tr class="table-dark text-dark"><td>Distr.: General</td><td>Distr.: General</td><td>Distr.: General</td></tr><tr class="table-light"><td>13 April 2023</td><td>13 April 2023</td><td>13 April 2023</td></tr><tr class="table-dark text-dark"><td>Original: English</td><td>Original: English</td><td>Original: English</td></tr><tr class="table-light"><td>Letter dated 12 April 2023 from the President of the Security Council addressed to the Secretary-General</td><td>Letter dated 12 April 2023 from the President of the Security Council addressed to the Secretary-General</td><td>Letter dated 12 April 2023 from the President of the Security Council <span id="ZE5B" class="replacement automatic tentative"><span class="from_repl">addressed</span> <span class="to_repl"></span></span> to the Secretary-General</td></tr><tr class="table-dark text-dark"><td>The Security Council took note of the letter from the Foreign Minister of Colombia dated 14 February 2023 (S/2023/112) in which he updated the Council on the progress made by the Government of Colombia in its talks with various groups and in which he requested the expansion of the mandate of the United Nations Verification Mission to support these efforts, in particular in the verification of ceasefires. </td><td>The Security Council took note of the letter from the <span id="VEIY" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">Minister for</span></span> Foreign <span id="NYHD" class="replacement human tentative"><span class="from_repl">Minister</span> <span class="to_repl">Affairs</span></span> of Colombia dated 14 February 2023 (S/2023/112 <span id="MS35" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">, annex</span></span> ) in which he updated the Council on the progress made by the Government of Colombia in its talks with various groups and in which he requested the expansion of the mandate of the United Nations Verification Mission <span id="N7UG" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">in Colombia</span></span> to support <span id="SY1E" class="replacement human tentative"><span class="from_repl">these</span> <span class="to_repl">the</span></span> efforts, in particular in the verification of ceasefires.</td><td>The Security Council took note of the letter from the Foreign Minister of Colombia dated 14 February 2023 (S/2023/112) in which he updated the Council on the progress made by the Government of Colombia in its talks with various groups and in which he requested the expansion of the mandate of the United Nations Verification Mission to support these efforts, in particular in the verification of ceasefires.</td></tr><tr class="table-light"><td>The members of the Security Council request you to provide for their consideration, within the next 60 days, detailed recommendations and options – including implications for the configuration of the United Nations Verification Mission – taking into account the opinions of all relevant Colombian stakeholders and of Security Council members, for the possible role the United Nations could play in this regard.</td><td>The members of the Security Council request <span id="9UAK" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">that</span></span> you <span id="3BLY" class="replacement human tentative"><span class="from_repl">to</span> <span class="to_repl"></span></span> provide for their consideration, within the next 60 days, detailed recommendations and options <span id="EZVJ" class="replacement human tentative"><span class="from_repl">–</span> <span class="to_repl">,</span></span> including implications for the configuration of the <span id="3CG1" class="replacement human tentative"><span class="from_repl">United Nations Verification</span> <span class="to_repl"></span></span> Mission <span id="VHO4" class="replacement human tentative"><span class="from_repl">–</span> <span class="to_repl">,</span></span> taking into account the opinions of all relevant Colombian stakeholders and of <span id="GCRH" class="replacement human tentative"><span class="from_repl">Security</span> <span class="to_repl"></span></span> Council members, for the possible role <span id="YIGW" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">that</span></span> the United Nations could play in this regard.</td><td>The members of the Security Council request you to provide for their consideration, within the next 60 days, detailed recommendations and options – including implications for the configuration of the United Nations Verification Mission – taking into account the opinions of all relevant Colombian stakeholders and of Security Council members, for the possible role the United Nations could play in this regard.</td></tr><tr class="table-dark text-dark"><td>						     	 Vassily Nebenzia</td><td><span id="8T89" class="replacement human tentative"><span class="from_repl"></span> <span class="to_repl">(Signed)</span></span> Vassily Nebenzia</td><td>Vassily Nebenzia</td></tr><tr class="table-light"><td>						President of the Security Council</td><td>President of the Security Council</td><td>President of the Security Council</td></tr></tbody>
+    <thead id="data_table_headers"><tr><th>Output</th></tr></thead>
+    <tbody id="data_display_table_body" contenteditable><tr class="table-light" name="word/document.xml|89c19e5419"><td>United Nations</td></tr><tr class="table-dark text-dark" name="word/document.xml|09b7f51d4a"><td>S/2023/270</td></tr><tr class="table-light" name="word/document.xml|2f4233019f"><td>Security Council</td></tr><tr class="table-dark text-dark" name="word/document.xml|46e99b42f3"><td>Distr.: General</td></tr><tr class="table-light" name="word/document.xml|5eb8a1e93a"><td>13 April 2023</td></tr><tr class="table-dark text-dark" name="word/document.xml|67ffe80d70"><td>Original: English</td></tr><tr class="table-light" name="word/document.xml|21574ef939"><td>Letter dated 12 April 2023 from the President of the Security Council <span id="E41J" class="replacement automatic delete tentative" name="Council addressed to | Council to"><span class="from_repl from_initial">addressed</span> <span class="to_repl to_initial"></span></span> to the Secretary-General</td></tr><tr class="table-dark text-dark" name="word/document.xml|65a2b2735a"><td>The Security Council took note of the letter from the Foreign Minister of Colombia dated 14 February 2023 (S/2023/112) in which he updated the Council on the progress made by the Government of Colombia in its talks with various groups and in which he requested the expansion of the mandate of the United Nations Verification Mission to support these efforts, in particular in the verification of ceasefires.</td></tr><tr class="table-light" name="word/document.xml|a5ba3bba7e"><td>The members of the Security Council request you to provide for their consideration, within the next 60 days, detailed recommendations and options – including implications for the configuration of the United Nations Verification Mission – taking into account the opinions of all relevant Colombian stakeholders and of Security Council members, for the possible role the United Nations could play in this regard.</td></tr><tr class="table-dark text-dark" name="word/document.xml|7390f28c64"><td>Vassily Nebenzia</td></tr><tr class="table-light" name="word/document.xml|f88a488b11"><td>President of the Security Council</td></tr></tbody>
   </table>
+
+  <div class="footer_spacer"></div>
+  <footer class="fixed-bottom">
+    <div class="row">
+      <div class="col text-center">
+        <div class="mt-3">Current Replacement: </div>
+      </div>
+      <div class="col text-center">
+        <div id="cur_repl_display" class="mt-3" style="background-color: lightblue">This ⇨ That </div>
+        
+      </div>
+      <div class="col">
+        <div class="m-1" style="display: inline-block;">
+        <button type="button" class="btn btn-success mt-2" onclick="accept_repl_all()">Accept All</button>
+        <button type="button" class="btn btn-danger mt-2" onclick="reject_repl_all()">Reject All</button>  
+          
+        </div>
+        <div class="form-check m-2" style="display: inline-block;">
+          <input class="form-check-input" type="checkbox" value="" id="whitelist_blacklist_check" name="whitelist_blacklist_check">
+          <label class="form-check-label" for="whitelist_blacklist_check">
+            Whitelist/Blacklist
+          </label>
+          
+        </div>
+
+
+        
+      </div>
+
+      <div class="col text-right">
+
+        <button type="button" class="btn btn-info btn-lg m-2">Export
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right-square" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 2a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2zM0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.854 8.803a.5.5 0 1 1-.708-.707L9.243 6H6.475a.5.5 0 1 1 0-1h3.975a.5.5 0 0 1 .5.5v3.975a.5.5 0 1 1-1 0V6.707l-4.096 4.096z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+<!--   <div class="footer fixed-bottom">Footer</div> -->
 </div>
 
 </body>
