@@ -485,7 +485,7 @@ function createID() {
 
 function export_docx(){
 	all_class_items0=document.getElementsByClassName("changed") 
-	export_data_dict={}
+	export_item_dict={}
 	for (item0 of all_class_items0){
 		console.log(item0)
 		item_id=item0.id
@@ -513,13 +513,15 @@ function export_docx(){
 		// for (el0 of to_rejected_spans) el0.innerHTML=""
 		visible_text=new_element.textContent	
 		console.log(item_id,item_name,visible_text)
+		export_item_dict[item_name]=visible_text
 
 		//$('#output *:not(:has(*)):visible').text()
 	}
 	export_upload_dict={}
 	export_upload_dict["qs_dict"]=qs_dict
+	export_upload_dict["export_item_dict"]=export_item_dict
 
-	//post_data_async("log_repl",repl_outcome_dict)
+	post_data_async("export_docx",export_upload_dict)
 	
 }
 
