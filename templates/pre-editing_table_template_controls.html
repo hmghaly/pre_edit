@@ -402,6 +402,9 @@ function apply_accept(cur_id){
 	to_el.classList.remove("to_repl")
 	to_el.classList.add("to_appoved")
 	console.log("applied accept")	
+
+	parent_tr=get_parent_with_tag(cur_el,"tr") //get parent tr for the current element
+	console.log("parent_tr",parent_tr)
 }
 
 
