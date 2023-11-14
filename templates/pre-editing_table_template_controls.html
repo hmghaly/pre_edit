@@ -493,8 +493,23 @@ function export_docx(){
 		var item_name = item0.getAttribute("name");
 		//selector='#_el_ *:not(:has(*)):visible'.replace("_el_",item_id)
 		//visible_text=$(selector).text()
-		visible_text=$('#'+item_id).children(":visible").text() 
+		//visible_text=$('#'+item_id).children(":visible").text() 
+		
+
+		new_element = item0.cloneNode(true);
+		//new_element.getElementsByTagName("span")
+		// from_initial_spans=new_element.getElementsByClassName("from_initial")
+		// to_initial_spans=new_element.getElementsByClassName("to_initial")
+		from_approved_spans=new_element.getElementsByClassName("from_appoved")
+		to_appoved_spans=new_element.getElementsByClassName("to_appoved")
+		from_rejected_spans=new_element.getElementsByClassName("from_rejected")
+		to_rejected_spans=new_element.getElementsByClassName("to_rejected")
+
+		for (el0 of from_approved_spans) el0.innerHTML=""
+		for (el0 of to_rejected_spans) el0.innerHTML=""
+		visible_text=new_element.textContent	
 		console.log(item_id,item_name,visible_text)
+
 		//$('#output *:not(:has(*)):visible').text()
 	}
 	export_upload_dict={}
