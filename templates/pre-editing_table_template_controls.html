@@ -406,9 +406,10 @@ function apply_accept(cur_id){
 	parent_tr=get_parent_with_tag(cur_el,"tr") //get parent tr for the current element
 	console.log("parent_tr",parent_tr, parent_tr.id)
 	parent_tr.classList.add('changed');
-	if (parent_tr.id==null){
+	if (parent_tr.id==null || parent_tr.id==""){
 		item_id=createID()
-		parent_tr.id=item_id	
+		//parent_tr.id=item_id	
+		parent_tr.setAttribute("id", item_id);
 		console.log(parent_tr)
 	}
 
