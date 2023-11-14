@@ -107,3 +107,4 @@
 {"decision": "accept", "all": false, "affected": 1, "repl": "Council addressed to | Council to", "link": "processing/2306907E_Editing.html", "time": "Tue Nov 14 16:20:51 2023"}
 {"decision": "accept", "all": false, "affected": 1, "repl": "Council addressed to | Council to", "link": "processing/2300126E_Editing.html", "time": "Tue Nov 14 16:21:45 2023"}
 {"decision": "accept_all", "all": true, "affected": 1, "repl": "honor | honour", "link": "processing/2300097E_Editing.html", "time": "Tue Nov 14 16:34:30 2023"}
+{"decision": "accept", "all": false, "affected": 1, "repl": "honor | honour", "link": "processing/2300097E_Editing.html", "time": "Tue Nov 14 16:55:09 2023"}
