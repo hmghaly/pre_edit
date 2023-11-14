@@ -476,12 +476,12 @@ function export_docx(){
 	export_data_dict={}
 	for (item0 of all_class_items0){
 		console.log(item0)
-		//item_id=item0.id
+		item_id=createID()
 		var item_name = item0.getAttribute("name");
 		//selector='#_el_ *:not(:has(*)):visible'.replace("_el_",item_id)
 		//visible_text=$(selector).text()
-		visible_text=$('#'+item_name).children(":visible").text() 
-		console.log(item_id,visible_text)
+		visible_text=$('#'+item_id).children(":visible").text() 
+		console.log(item_id,item_name,visible_text)
 		//$('#output *:not(:has(*)):visible').text()
 	}
 	export_upload_dict={}
