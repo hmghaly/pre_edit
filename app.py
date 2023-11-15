@@ -135,6 +135,19 @@ def interface():
     except: output=json.dumps(cur_dict) 
     return output 
 
+@app.route('/export_docx',methods = ['POST', 'GET'])
+def export_docx():
+    cur_dict={}
+    # posted_data_dict={}
+    # if request.method == 'POST':
+    #     posted_data=request.data.decode("utf-8")
+    #     posted_data_dict=json.loads(posted_data)
+    # posted_data_dict["time"]=time.ctime()
+    #log_something(json.dumps(posted_data_dict),repl_log_fpath)
+    cur_dict["success"]=True
+    return json.dumps(cur_dict)
+
+
 @app.route('/process',methods = ['POST', 'GET'])
 def process():
     #cur_dict={"request_type":"generic"}
