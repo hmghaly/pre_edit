@@ -523,6 +523,9 @@ async function export_docx(){
 
 	outcome=await post_data_async("export_docx",export_upload_dict)
 	console.log(outcome)
+	doc_download_url=outcome["exported_docx_fpath"]
+	document.getElementById('my_iframe').src = doc_download_url;
+
 	
 }
 
@@ -701,6 +704,7 @@ async function export_docx(){
 
 <!--   <div class="footer fixed-bottom">Footer</div> -->
 </div>
+<iframe id="my_iframe" style="display:none;"></iframe>
 
 </body>
 </html>
