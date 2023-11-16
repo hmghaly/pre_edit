@@ -135,16 +135,32 @@ def interface():
     except: output=json.dumps(cur_dict) 
     return output 
 
+
 @app.route('/export_docx',methods = ['POST', 'GET'])
 def export_docx():
     cur_dict={}
-    # posted_data_dict={}
-    # if request.method == 'POST':
-    #     posted_data=request.data.decode("utf-8")
-    #     posted_data_dict=json.loads(posted_data)
-    # posted_data_dict["time"]=time.ctime()
+    posted_data_dict={}
+    if request.method == 'POST':
+        posted_data=request.data.decode("utf-8")
+        posted_data_dict=json.loads(posted_data)
+    posted_data_dict["time"]=time.ctime()
+    qs_dict0=posted_data_dict["qs_dict"]
+    export_item_dict0=posted_data_dict["export_item_dict"]
+    html_link_fpath=qs_dict0.get("link","")
+    html_link_fname=os.path.split(html_link_fpath)[-1]
+    cur_docx_fname=html_link_fname.replace(".html",".docx")
+    cur_docx_fpath=os.path.join("uploaded",cur_docx_fname)
+    cur_pre_edited_docx_fname=cur_docx_fname.replace(".docx","-pre_edited.docx")
+
+    exported_docx_fpath=os.path.join(output_dir,cur_pre_edited_docx_fname)
+
+    apply_docx_paras(cur_docx_fpath,export_item_dict0,exported_docx_fpath)
+
     #log_something(json.dumps(posted_data_dict),repl_log_fpath)
     cur_dict["success"]=True
+    cur_dict["data"]=posted_data_dict
+    cur_dict["exported_docx_fpath"]=exported_docx_fpath
+
     return json.dumps(cur_dict)
 
 
